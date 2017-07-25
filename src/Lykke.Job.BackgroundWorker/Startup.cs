@@ -59,7 +59,7 @@ namespace Lykke.Job.BackgroundWorker
 
             builder.RegisterModule(new JobModule(appSettings.BackgroundWorkerJob, log));
 
-            if (string.IsNullOrWhiteSpace(appSettings.BackgroundWorkerJob.TriggerQueueConnectionString))
+            if (string.IsNullOrWhiteSpace(appSettings.BackgroundWorkerJob.Db.ClientPersonalInfoConnString))
             {
                 builder.AddTriggers();
             }
@@ -67,7 +67,7 @@ namespace Lykke.Job.BackgroundWorker
             {
                 builder.AddTriggers(pool =>
                 {
-                    pool.AddDefaultConnection(appSettings.BackgroundWorkerJob.TriggerQueueConnectionString);
+                    pool.AddDefaultConnection(appSettings.BackgroundWorkerJob.Db.ClientPersonalInfoConnString);
                 });
             }
 

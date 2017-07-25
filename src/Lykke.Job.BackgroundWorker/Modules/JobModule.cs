@@ -1,10 +1,27 @@
 ﻿using System;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using AzureStorage.Tables;
+using AzureStorage.Tables.Templates.Index;
 using Common.Log;
+using Lykke.Job.BackgroundWorker.AzureRepositories.CashOperations;
+using Lykke.Job.BackgroundWorker.AzureRepositories.Clients;
+using Lykke.Job.BackgroundWorker.AzureRepositories.EventLogs;
+using Lykke.Job.BackgroundWorker.AzureRepositories.Kyc;
+using Lykke.Job.BackgroundWorker.AzureRepositories.KycCheck;
+using Lykke.Job.BackgroundWorker.Components;
 using Lykke.Job.BackgroundWorker.Core;
+using Lykke.Job.BackgroundWorker.Core.Domain.CashOperations;
+using Lykke.Job.BackgroundWorker.Core.Domain.Clients;
+using Lykke.Job.BackgroundWorker.Core.Domain.EventLogs;
+using Lykke.Job.BackgroundWorker.Core.Domain.Kyc;
+using Lykke.Job.BackgroundWorker.Core.Domain.KycCheckService;
 using Lykke.Job.BackgroundWorker.Core.Services;
+using Lykke.Job.BackgroundWorker.Core.Services.Geospatial;
+using Lykke.Job.BackgroundWorker.Core.Services.PersonalData;
 using Lykke.Job.BackgroundWorker.Services;
+using Lykke.Job.BackgroundWorker.Services.Geospatial;
+using Lykke.Job.BackgroundWorker.Services.PersonalData;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Lykke.Job.BackgroundWorker.Modules
@@ -13,15 +30,13 @@ namespace Lykke.Job.BackgroundWorker.Modules
     {
         private readonly AppSettings.BackgroundWorkerSettings _settings;
         private readonly ILog _log;
-        // NOTE: you can remove it if you don't need to use IServiceCollection extensions to register service specific dependencies
-        private readonly IServiceCollection _services;
+        private AppSettings.DbSettings _dbSettings;
 
         public JobModule(AppSettings.BackgroundWorkerSettings settings, ILog log)
         {
             _settings = settings;
+            _dbSettings = settings.Db;
             _log = log;
-
-            _services = new ServiceCollection();
         }
 
         protected override void Load(ContainerBuilder builder)
@@ -41,9 +56,62 @@ namespace Lykke.Job.BackgroundWorker.Modules
             // NOTE: You can implement your own poison queue notifier. See https://github.com/LykkeCity/JobTriggers/blob/master/readme.md
             // builder.Register<PoisionQueueNotifierImplementation>().As<IPoisionQueueNotifier>();
 
-            // TODO: Add your dependencies here
+            builder.RegisterType<WorkersFactory>().As<IWorkersFactory>().SingleInstance();
 
-            builder.Populate(_services);
+            BindRepositories(builder);
+            BindServices(builder);
+        }
+
+        private void BindServices(ContainerBuilder builder)
+        {
+            builder.RegisterType<SrvIpGeolocation>().As<ISrvIpGetLocation>().SingleInstance();
+            
+            builder.RegisterType<PersonalDataService>()
+                .As<IPersonalDataService>()
+                .WithParameter(TypedParameter.From(_settings.PersonalDataServiceSettings));
+        }
+
+        private void BindRepositories(ContainerBuilder builder)
+        {
+            builder.RegisterInstance<ICashOperationsRepository>(
+                new CashOperationsRepository(
+                    new AzureTableStorage<CashInOutOperationEntity>(_dbSettings.ClientPersonalInfoConnString, "OperationsCash", _log),
+                    new AzureTableStorage<AzureIndex>(_dbSettings.ClientPersonalInfoConnString, "OperationsCash", _log))
+            );
+
+            builder.RegisterInstance<IClientTradesRepository>(
+                new ClientTradesRepository(new AzureTableStorage<ClientTradeEntity>(_dbSettings.HTradesConnString, "Trades", _log)));
+
+            builder.RegisterInstance<ITransferEventsRepository>(
+                new TransferEventsRepository(
+                    new AzureTableStorage<TransferEventEntity>(_dbSettings.ClientPersonalInfoConnString, "Transfers", _log),
+                    new AzureTableStorage<AzureIndex>(_dbSettings.ClientPersonalInfoConnString, "Transfers", _log)));
+
+            builder.RegisterInstance<IClientAccountsRepository>(
+            new ClientsRepository(
+                new AzureTableStorage<ClientAccountEntity>(_dbSettings.ClientPersonalInfoConnString, "Traders", _log),
+                new AzureTableStorage<ClientPartnerRelationEntity>(_dbSettings.ClientPersonalInfoConnString, "ClientPartnerRelations", _log),
+                new AzureTableStorage<AzureIndex>(_dbSettings.ClientPersonalInfoConnString, "Traders", _log)));
+
+            builder.RegisterInstance<IPersonalDataRepository>(
+                new PersonalDataRepository(
+                    new AzureTableStorage<PersonalDataEntity>(_dbSettings.ClientPersonalInfoConnString, "PersonalData", _log)));
+
+            builder.RegisterInstance<IAuthorizationLogsRepository>(
+                new AuthorizationLogsRepository(
+                    new AzureTableStorage<AuthorizationLogRecordEntity>(_dbSettings.LogsConnString, "AuthLogs", _log)));
+
+            builder.RegisterInstance<IKycDocumentsRepository>(
+                new KycDocumentsRepository(
+                    new AzureTableStorage<KycDocumentEntity>(_dbSettings.ClientPersonalInfoConnString, "KycDocuments", _log)));
+
+            builder.RegisterInstance<IKycRepository>(
+                new KycRepository(new AzureTableStorage<KycEntity>(_dbSettings.ClientPersonalInfoConnString, "KycStatuses", _log)));
+
+            builder.RegisterInstance<IKycCheckPersonResultRepository>(
+                new KycCheckPersonResultRepository(
+                    new AzureTableStorage<KycCheckPersonResultEntity>(_dbSettings.ClientPersonalInfoConnString, "KycCheckPersonResults", _log)));
+
         }
     }
 }

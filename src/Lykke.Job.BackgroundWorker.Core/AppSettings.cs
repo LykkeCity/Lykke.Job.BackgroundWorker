@@ -8,12 +8,29 @@
         public class BackgroundWorkerSettings
         {
             public DbSettings Db { get; set; }
-            public string TriggerQueueConnectionString { get; set; }
+            public KycSpiderSettings KycSpiderSettings { get; set; }
+            public PersonalDataServiceSettings PersonalDataServiceSettings { get; set; }
         }
 
         public class DbSettings
         {
             public string LogsConnString { get; set; }
+            public string ClientPersonalInfoConnString { get; set; }
+            public string HTradesConnString { get; set; }
+        }
+
+        public class PersonalDataServiceSettings
+        {
+            public string ServiceUri { get; set; }
+
+            public string ApiKey { get; set; }
+        }
+
+        public class KycSpiderSettings
+        {
+            public string User { get; set; }
+            public string Password { get; set; }
+            public string EndpointUrl { get; set; }
         }
 
         public class SlackNotificationsSettings

@@ -5,10 +5,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Flurl.Http" Version="1.1.1" />
     <PackageReference Include="Lykke.Common" Version="1.1.79" />
+    <PackageReference Include="System.ServiceModel.Http" Version="4.4.0-preview2-25419-01" />
+    <PackageReference Include="System.Xml.XmlSerializer" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Lykke.Job.BackgroundWorker.AzureRepositories\Lykke.Job.BackgroundWorker.AzureRepositories.csproj" />
     <ProjectReference Include="..\Lykke.Job.BackgroundWorker.Core\Lykke.Job.BackgroundWorker.Core.csproj" />
   </ItemGroup>
 
