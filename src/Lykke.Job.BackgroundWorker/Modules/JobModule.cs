@@ -10,6 +10,7 @@ using Lykke.Job.BackgroundWorker.AzureRepositories.EventLogs;
 using Lykke.Job.BackgroundWorker.AzureRepositories.Kyc;
 using Lykke.Job.BackgroundWorker.AzureRepositories.KycCheck;
 using Lykke.Job.BackgroundWorker.Components;
+using Lykke.Job.BackgroundWorker.Components.Workers;
 using Lykke.Job.BackgroundWorker.Core;
 using Lykke.Job.BackgroundWorker.Core.Domain.CashOperations;
 using Lykke.Job.BackgroundWorker.Core.Domain.Clients;
@@ -30,7 +31,7 @@ namespace Lykke.Job.BackgroundWorker.Modules
     {
         private readonly AppSettings.BackgroundWorkerSettings _settings;
         private readonly ILog _log;
-        private AppSettings.DbSettings _dbSettings;
+        private readonly AppSettings.DbSettings _dbSettings;
 
         public JobModule(AppSettings.BackgroundWorkerSettings settings, ILog log)
         {
@@ -57,6 +58,12 @@ namespace Lykke.Job.BackgroundWorker.Modules
             // builder.Register<PoisionQueueNotifierImplementation>().As<IPoisionQueueNotifier>();
 
             builder.RegisterType<WorkersFactory>().As<IWorkersFactory>().SingleInstance();
+
+            builder.RegisterType<SetPinWorker>();
+            builder.RegisterType<SetAuthLogGeolocationWorker>();
+            builder.RegisterType<UpdateHashForOperationsWorker>();
+            builder.RegisterType<SetPartnerAccountInfoWorker>();
+            builder.RegisterType<CheckPersonWorker>();
 
             BindRepositories(builder);
             BindServices(builder);
