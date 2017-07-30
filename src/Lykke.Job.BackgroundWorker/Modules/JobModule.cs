@@ -61,7 +61,6 @@ namespace Lykke.Job.BackgroundWorker.Modules
 
             builder.RegisterType<SetPinWorker>();
             builder.RegisterType<SetAuthLogGeolocationWorker>();
-            builder.RegisterType<UpdateHashForOperationsWorker>();
             builder.RegisterType<SetPartnerAccountInfoWorker>();
             builder.RegisterType<CheckPersonWorker>()
                 .WithParameter(TypedParameter.From(_settings.KycSpiderSettings));
