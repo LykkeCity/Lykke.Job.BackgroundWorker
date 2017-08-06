@@ -1,6 +1,5 @@
 ﻿using System;
 using Autofac;
-using Autofac.Extensions.DependencyInjection;
 using AzureStorage.Tables;
 using AzureStorage.Tables.Templates.Index;
 using Common.Log;
@@ -19,11 +18,10 @@ using Lykke.Job.BackgroundWorker.Core.Domain.Kyc;
 using Lykke.Job.BackgroundWorker.Core.Domain.KycCheckService;
 using Lykke.Job.BackgroundWorker.Core.Services;
 using Lykke.Job.BackgroundWorker.Core.Services.Geospatial;
-using Lykke.Job.BackgroundWorker.Core.Services.PersonalData;
 using Lykke.Job.BackgroundWorker.Services;
 using Lykke.Job.BackgroundWorker.Services.Geospatial;
-using Lykke.Job.BackgroundWorker.Services.PersonalData;
-using Microsoft.Extensions.DependencyInjection;
+using Lykke.Service.PersonalData.Client;
+using Lykke.Service.PersonalData.Contract;
 
 namespace Lykke.Job.BackgroundWorker.Modules
 {
@@ -99,11 +97,7 @@ namespace Lykke.Job.BackgroundWorker.Modules
                 new AzureTableStorage<ClientAccountEntity>(_dbSettings.ClientPersonalInfoConnString, "Traders", _log),
                 new AzureTableStorage<ClientPartnerRelationEntity>(_dbSettings.ClientPersonalInfoConnString, "ClientPartnerRelations", _log),
                 new AzureTableStorage<AzureIndex>(_dbSettings.ClientPersonalInfoConnString, "Traders", _log)));
-
-            builder.RegisterInstance<IPersonalDataRepository>(
-                new PersonalDataRepository(
-                    new AzureTableStorage<PersonalDataEntity>(_dbSettings.ClientPersonalInfoConnString, "PersonalData", _log)));
-
+            
             builder.RegisterInstance<IAuthorizationLogsRepository>(
                 new AuthorizationLogsRepository(
                     new AzureTableStorage<AuthorizationLogRecordEntity>(_dbSettings.LogsConnString, "AuthLogs", _log)));

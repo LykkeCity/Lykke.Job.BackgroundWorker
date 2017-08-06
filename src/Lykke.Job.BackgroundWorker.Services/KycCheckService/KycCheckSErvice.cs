@@ -6,6 +6,7 @@ using Lykke.Job.BackgroundWorker.AzureRepositories.KycCheck;
 using Lykke.Job.BackgroundWorker.Core;
 using Lykke.Job.BackgroundWorker.Core.Domain.Clients;
 using Lykke.Job.BackgroundWorker.Core.Domain.KycCheckService;
+using Lykke.Service.PersonalData.Contract.Models;
 
 namespace Lykke.Job.BackgroundWorker.Services.KycCheckService
 {
@@ -29,8 +30,7 @@ namespace Lykke.Job.BackgroundWorker.Services.KycCheckService
                 new IncompleteDate() { year = personalData.DateOfBirth.Value.Year, month = personalData.DateOfBirth.Value.Month, day = personalData.DateOfBirth.Value.Day }
             };
             checkPerson request = new checkPerson(checkData);
-
-            var accessClient = new accessClient();
+            
             BasicHttpsBinding binding = new BasicHttpsBinding(BasicHttpsSecurityMode.Transport);
             binding.Security.Transport.ClientCredentialType = HttpClientCredentialType.Basic;
             EndpointAddress epa = new EndpointAddress(settings.EndpointUrl);

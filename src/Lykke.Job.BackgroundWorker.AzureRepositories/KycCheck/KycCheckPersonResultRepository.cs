@@ -41,26 +41,6 @@ namespace Lykke.Job.BackgroundWorker.AzureRepositories.KycCheck
             _tableStorage = tableStorage;
         }
 
-        public async Task<IKycCheckPersonResult> GetAsync(string id)
-        {
-            KycCheckPersonResultEntity entity = await _tableStorage.GetTopRecordAsync(id);
-            if (entity != null)
-            {
-                IKycCheckPersonResult result = new KycCheckPersonResult();
-                if (entity.PersonProfiles != null)
-                {
-                    List<KycCheckPersonProfile> profiles = entity.PersonProfiles.DeserializeJson<List<KycCheckPersonProfile>>();
-                    if (profiles != null)
-                    {
-                        result.PersonProfiles = new List<IKycCheckPersonProfile>();
-                        result.PersonProfiles.AddRange(profiles);
-                    }
-                }
-                return result;
-            }
-            return null;
-        }
-
         public async void SaveAsync(IKycCheckPersonResult res)
         {
             KycCheckPersonResultEntity entity = new KycCheckPersonResultEntity();
@@ -73,8 +53,6 @@ namespace Lykke.Job.BackgroundWorker.AzureRepositories.KycCheck
             }
             await _tableStorage.InsertOrReplaceAsync(entity);
         }
-
-
 
     }
 }
