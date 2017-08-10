@@ -57,7 +57,7 @@ namespace Lykke.Job.BackgroundWorker
                 : HttpSettingsLoader.Load<AppSettings>(Configuration.GetValue<string>("SettingsUrl"));
             var log = CreateLogWithSlack(services, appSettings);
 
-            builder.RegisterModule(new JobModule(appSettings.BackgroundWorkerJob, log));
+            builder.RegisterModule(new JobModule(appSettings, log));
 
             if (string.IsNullOrWhiteSpace(appSettings.BackgroundWorkerJob.Db.ClientPersonalInfoConnString))
             {

@@ -4,26 +4,26 @@ using System.Threading.Tasks;
 using Common;
 using Lykke.Job.BackgroundWorker.Contract.Contexts;
 using Lykke.Job.BackgroundWorker.Core.Domain.BitCoin;
-using Lykke.Job.BackgroundWorker.Core.Domain.CashOperations;
+using Lykke.Service.OperationsRepository.Client.Abstractions.CashOperations;
 
 namespace Lykke.Job.BackgroundWorker.Components.Workers
 {
     public class UpdateHashForOperationsWorker : IWorker
     {
-        private readonly IClientTradesRepository _clientTradesRepository;
-        private readonly ITransferEventsRepository _transferEventsRepository;
-        private readonly ICashOperationsRepository _cashOperationsRepository;
+        private readonly ITradeOperationsRepositoryClient _clientTradesRepositoryClient;
+        private readonly ITransferOperationsRepositoryClient _transferEventsRepositoryClient;
+        private readonly ICashOperationsRepositoryClient _cashOperationsRepositoryClient;
 
         private UpdateHashForOperationsContext _context;
         private readonly Dictionary<string, Func<string, string, Task>> _handlers =
             new Dictionary<string, Func<string, string, Task>>();
 
-        public UpdateHashForOperationsWorker(IClientTradesRepository clientTradesRepository,
-            ITransferEventsRepository transferEventsRepository, ICashOperationsRepository cashOperationsRepository)
+        public UpdateHashForOperationsWorker(ITradeOperationsRepositoryClient clientTradesRepositoryClient,
+            ITransferOperationsRepositoryClient transferEventsRepositoryClient, ICashOperationsRepositoryClient cashOperationsRepositoryClient)
         {
-            _clientTradesRepository = clientTradesRepository;
-            _transferEventsRepository = transferEventsRepository;
-            _cashOperationsRepository = cashOperationsRepository;
+            _clientTradesRepositoryClient = clientTradesRepositoryClient;
+            _transferEventsRepositoryClient = transferEventsRepositoryClient;
+            _cashOperationsRepositoryClient = cashOperationsRepositoryClient;
 
             RegisterHandler(BitCoinCommands.Issue, HandleIssueAsync);
             RegisterHandler(BitCoinCommands.CashOut, HandleCashOutAsync);
@@ -59,7 +59,7 @@ namespace Lykke.Job.BackgroundWorker.Components.Workers
         {
             var contextData = operationContext.DeserializeJson<UncolorContextData>();
 
-            await _cashOperationsRepository.UpdateBlockchainHashAsync(contextData.ClientId,
+            await _cashOperationsRepositoryClient.UpdateBlockchainHashAsync(contextData.ClientId,
                 contextData.CashOperationId, hash);
         }
 
@@ -67,7 +67,7 @@ namespace Lykke.Job.BackgroundWorker.Components.Workers
         {
             var contextData = operationContext.DeserializeJson<IssueContextData>();
 
-            await _cashOperationsRepository.UpdateBlockchainHashAsync(contextData.ClientId,
+            await _cashOperationsRepositoryClient.UpdateBlockchainHashAsync(contextData.ClientId,
                 contextData.CashOperationId, hash);
         }
 
@@ -75,7 +75,7 @@ namespace Lykke.Job.BackgroundWorker.Components.Workers
         {
             var contextData = operationContext.DeserializeJson<CashOutContextData>();
 
-            await _cashOperationsRepository.UpdateBlockchainHashAsync(contextData.ClientId,
+            await _cashOperationsRepositoryClient.UpdateBlockchainHashAsync(contextData.ClientId,
                 contextData.CashOperationId, hash);
         }
 
@@ -84,7 +84,7 @@ namespace Lykke.Job.BackgroundWorker.Components.Workers
             var contextData = operationContext.DeserializeJson<SwapContextData>();
             foreach (var item in contextData.Trades)
             {
-                await _clientTradesRepository.UpdateBlockChainHashAsync(item.ClientId, item.TradeId,
+                await _clientTradesRepositoryClient.UpdateBlockchainHashAsync(item.ClientId, item.TradeId,
                     hash);
             }
         }
@@ -95,7 +95,7 @@ namespace Lykke.Job.BackgroundWorker.Components.Workers
 
             foreach (var transfer in contextData.Transfers)
             {
-                await _transferEventsRepository.UpdateBlockChainHashAsync(transfer.ClientId, transfer.OperationId, hash);
+                await _transferEventsRepositoryClient.UpdateBlockChainHashAsync(transfer.ClientId, transfer.OperationId, hash);
             }
         }
 

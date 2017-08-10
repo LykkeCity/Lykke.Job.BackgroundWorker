@@ -1,10 +1,8 @@
 ﻿using System;
 using Autofac;
-using Autofac.Extensions.DependencyInjection;
 using AzureStorage.Tables;
 using AzureStorage.Tables.Templates.Index;
 using Common.Log;
-using Lykke.Job.BackgroundWorker.AzureRepositories.CashOperations;
 using Lykke.Job.BackgroundWorker.AzureRepositories.Clients;
 using Lykke.Job.BackgroundWorker.AzureRepositories.EventLogs;
 using Lykke.Job.BackgroundWorker.AzureRepositories.Kyc;
@@ -12,7 +10,6 @@ using Lykke.Job.BackgroundWorker.AzureRepositories.KycCheck;
 using Lykke.Job.BackgroundWorker.Components;
 using Lykke.Job.BackgroundWorker.Components.Workers;
 using Lykke.Job.BackgroundWorker.Core;
-using Lykke.Job.BackgroundWorker.Core.Domain.CashOperations;
 using Lykke.Job.BackgroundWorker.Core.Domain.Clients;
 using Lykke.Job.BackgroundWorker.Core.Domain.EventLogs;
 using Lykke.Job.BackgroundWorker.Core.Domain.Kyc;
@@ -23,7 +20,7 @@ using Lykke.Job.BackgroundWorker.Core.Services.PersonalData;
 using Lykke.Job.BackgroundWorker.Services;
 using Lykke.Job.BackgroundWorker.Services.Geospatial;
 using Lykke.Job.BackgroundWorker.Services.PersonalData;
-using Microsoft.Extensions.DependencyInjection;
+using Lykke.Service.OperationsRepository.Client;
 
 namespace Lykke.Job.BackgroundWorker.Modules
 {
@@ -32,11 +29,13 @@ namespace Lykke.Job.BackgroundWorker.Modules
         private readonly AppSettings.BackgroundWorkerSettings _settings;
         private readonly ILog _log;
         private readonly AppSettings.DbSettings _dbSettings;
+        private readonly AppSettings.OperationsRepositoryClientSettings _repositorySettings;
 
-        public JobModule(AppSettings.BackgroundWorkerSettings settings, ILog log)
+        public JobModule(AppSettings settings, ILog log)
         {
-            _settings = settings;
-            _dbSettings = settings.Db;
+            _settings = settings.BackgroundWorkerJob;
+            _repositorySettings = settings.OperationsRepositoryClient;
+            _dbSettings = _settings.Db;
             _log = log;
         }
 
@@ -77,24 +76,13 @@ namespace Lykke.Job.BackgroundWorker.Modules
             builder.RegisterType<PersonalDataService>()
                 .As<IPersonalDataService>()
                 .WithParameter(TypedParameter.From(_settings.PersonalDataServiceSettings));
+
+            builder.RegisterOperationsRepositoryClients(_repositorySettings.ServiceUrl, _log,
+                _repositorySettings.RequestTimeout);
         }
 
         private void BindRepositories(ContainerBuilder builder)
         {
-            builder.RegisterInstance<ICashOperationsRepository>(
-                new CashOperationsRepository(
-                    new AzureTableStorage<CashInOutOperationEntity>(_dbSettings.ClientPersonalInfoConnString, "OperationsCash", _log),
-                    new AzureTableStorage<AzureIndex>(_dbSettings.ClientPersonalInfoConnString, "OperationsCash", _log))
-            );
-
-            builder.RegisterInstance<IClientTradesRepository>(
-                new ClientTradesRepository(new AzureTableStorage<ClientTradeEntity>(_dbSettings.HTradesConnString, "Trades", _log)));
-
-            builder.RegisterInstance<ITransferEventsRepository>(
-                new TransferEventsRepository(
-                    new AzureTableStorage<TransferEventEntity>(_dbSettings.ClientPersonalInfoConnString, "Transfers", _log),
-                    new AzureTableStorage<AzureIndex>(_dbSettings.ClientPersonalInfoConnString, "Transfers", _log)));
-
             builder.RegisterInstance<IClientAccountsRepository>(
             new ClientsRepository(
                 new AzureTableStorage<ClientAccountEntity>(_dbSettings.ClientPersonalInfoConnString, "Traders", _log),
