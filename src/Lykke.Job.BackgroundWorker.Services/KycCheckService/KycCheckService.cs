@@ -2,53 +2,72 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.ServiceModel;
+using System.Threading.Tasks;
 using Lykke.Job.BackgroundWorker.AzureRepositories.KycCheck;
-using Lykke.Job.BackgroundWorker.Core;
-using Lykke.Job.BackgroundWorker.Core.Domain.Clients;
 using Lykke.Job.BackgroundWorker.Core.Domain.KycCheckService;
+using Lykke.Service.PersonalData.Contract;
 using Lykke.Service.PersonalData.Contract.Models;
 
 namespace Lykke.Job.BackgroundWorker.Services.KycCheckService
 {
     public class KycCheckService
     {
-        public async void CheckPerson(IPersonalData personalData, IKycCheckPersonResultRepository kycCheckPersonResultRepository, AppSettings.KycSpiderSettings settings)
-        {
-            PersonCheckData checkData = new PersonCheckData();
-            checkData.residences = new string[] { };
-            checkData.citizenships = new string[] { };
-            checkData.datesOfBirth = new IncompleteDate[] { };
+        private readonly IPersonalDataService _personalDataService;
+        private readonly IKycCheckPersonResultRepository _kycCheckPersonResultRepository;
+        private readonly AppSettings.KycSpiderSettings _settings;
 
-            checkData.customerId = personalData.Id;
-            checkData.names = new PersonName[] {
-                new PersonName() { firstName = personalData.FirstName, lastName = personalData.LastName }
+        public KycCheckService(IPersonalDataService personalDataService,
+            IKycCheckPersonResultRepository kycCheckPersonResultRepository,
+            AppSettings.KycSpiderSettings settings)
+        {
+            _personalDataService = personalDataService;
+            _kycCheckPersonResultRepository = kycCheckPersonResultRepository;
+            _settings = settings;
+        }
+
+        public async Task CheckPerson(string clientId)
+        {
+            var personalData = await _personalDataService.GetAsync(clientId);
+            PersonCheckData checkData = new PersonCheckData
+            {
+                residences = new string[] {},
+                citizenships = new string[] {},
+                datesOfBirth = new IncompleteDate[] {},
+                customerId = personalData.Id,
+                names = new[]
+                {
+                    new PersonName {firstName = personalData.FirstName, lastName = personalData.LastName}
+                }
             };
-            checkData.citizenships = new string[] {
+
+            checkData.citizenships = new [] {
                 personalData.CountryFromID
             };
-            checkData.datesOfBirth = new IncompleteDate[] {
-                new IncompleteDate() { year = personalData.DateOfBirth.Value.Year, month = personalData.DateOfBirth.Value.Month, day = personalData.DateOfBirth.Value.Day }
+            checkData.datesOfBirth = new [] {
+                new IncompleteDate { year = personalData.DateOfBirth?.Year ?? -1, month = personalData.DateOfBirth?.Month ?? -1, day = personalData.DateOfBirth?.Day ?? -1 }
             };
             checkPerson request = new checkPerson(checkData);
-            
+
             BasicHttpsBinding binding = new BasicHttpsBinding(BasicHttpsSecurityMode.Transport);
             binding.Security.Transport.ClientCredentialType = HttpClientCredentialType.Basic;
-            EndpointAddress epa = new EndpointAddress(settings.EndpointUrl);
+            EndpointAddress epa = new EndpointAddress(_settings.EndpointUrl);
             ChannelFactory<accessChannel> factory = new ChannelFactory<accessChannel>(binding, epa);
-            factory.Credentials.UserName.UserName = settings.User;
-            factory.Credentials.UserName.Password = settings.Password;
+            factory.Credentials.UserName.UserName = _settings.User;
+            factory.Credentials.UserName.Password = _settings.Password;
 
             accessChannel channel = factory.CreateChannel();
             checkPersonResponse response = await channel.checkPersonAsync(request);
 
-            SaveCheckPersonResult(personalData, response, kycCheckPersonResultRepository);
+            await SaveCheckPersonResult(personalData, response);
         }
 
-        public void SaveCheckPersonResult(IPersonalData personalData, checkPersonResponse response, IKycCheckPersonResultRepository kycCheckPersonResultRepository)
+        public async Task SaveCheckPersonResult(IPersonalData personalData, checkPersonResponse response)
         {
-            KycCheckPersonResult resultObject = new KycCheckPersonResult();
-            resultObject.Id = personalData.Id;
-            resultObject.VerificationId = response.@return.verificationId;
+            KycCheckPersonResult resultObject = new KycCheckPersonResult
+            {
+                Id = personalData.Id,
+                VerificationId = response.@return.verificationId
+            };
 
             if (response.@return.personProfiles.Length > 0)
             {
@@ -85,7 +104,8 @@ namespace Lykke.Job.BackgroundWorker.Services.KycCheckService
                 }
                 resultObject.PersonProfiles = profs.ToList();
             }
-            kycCheckPersonResultRepository.SaveAsync(resultObject);
+
+            await _kycCheckPersonResultRepository.SaveAsync(resultObject);
 
         }
     }

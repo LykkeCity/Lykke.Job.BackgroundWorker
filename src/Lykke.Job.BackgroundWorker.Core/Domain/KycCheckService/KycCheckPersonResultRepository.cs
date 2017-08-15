@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Lykke.Job.BackgroundWorker.Core.Domain.KycCheckService
 {
@@ -20,6 +21,6 @@ namespace Lykke.Job.BackgroundWorker.Core.Domain.KycCheckService
 
     public interface IKycCheckPersonResultRepository
     {
-        void SaveAsync(IKycCheckPersonResult obj);
+        Task SaveAsync(IKycCheckPersonResult obj);
     }
 }

@@ -41,18 +41,21 @@ namespace Lykke.Job.BackgroundWorker.AzureRepositories.KycCheck
             _tableStorage = tableStorage;
         }
 
-        public async void SaveAsync(IKycCheckPersonResult res)
+        public async Task SaveAsync(IKycCheckPersonResult res)
         {
-            KycCheckPersonResultEntity entity = new KycCheckPersonResultEntity();
-            entity.PartitionKey = res.Id;
-            entity.RowKey = (long.MaxValue - DateTime.UtcNow.Ticks).ToString();
-            entity.VerificationId = res.VerificationId;
+            KycCheckPersonResultEntity entity = new KycCheckPersonResultEntity
+            {
+                PartitionKey = res.Id,
+                RowKey = (long.MaxValue - DateTime.UtcNow.Ticks).ToString(),
+                VerificationId = res.VerificationId
+            };
+
             if (res.PersonProfiles != null)
             {
                 entity.PersonProfiles = res.PersonProfiles.ToJson();
             }
+
             await _tableStorage.InsertOrReplaceAsync(entity);
         }
-
     }
 }

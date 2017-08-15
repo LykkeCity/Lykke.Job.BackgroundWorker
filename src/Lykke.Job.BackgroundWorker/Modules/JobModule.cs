@@ -20,6 +20,7 @@ using Lykke.Job.BackgroundWorker.Core.Services;
 using Lykke.Job.BackgroundWorker.Core.Services.Geospatial;
 using Lykke.Job.BackgroundWorker.Services;
 using Lykke.Job.BackgroundWorker.Services.Geospatial;
+using Lykke.Job.BackgroundWorker.Services.KycCheckService;
 using Lykke.Service.PersonalData.Client;
 using Lykke.Service.PersonalData.Contract;
 
@@ -43,6 +44,8 @@ namespace Lykke.Job.BackgroundWorker.Modules
             builder.RegisterInstance(_settings)
                 .SingleInstance();
 
+            builder.RegisterInstance(_settings.KycSpiderSettings);
+
             builder.RegisterInstance(_log)
                 .As<ILog>()
                 .SingleInstance();
@@ -60,8 +63,9 @@ namespace Lykke.Job.BackgroundWorker.Modules
             builder.RegisterType<SetPinWorker>();
             builder.RegisterType<SetAuthLogGeolocationWorker>();
             builder.RegisterType<SetPartnerAccountInfoWorker>();
-            builder.RegisterType<CheckPersonWorker>()
-                .WithParameter(TypedParameter.From(_settings.KycSpiderSettings));
+
+            builder.RegisterType<KycCheckService>();
+            builder.RegisterType<CheckPersonWorker>();
 
             BindRepositories(builder);
             BindServices(builder);
