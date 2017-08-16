@@ -16,6 +16,7 @@ namespace Lykke.Job.BackgroundWorker.AzureRepositories.KycCheck
         public List<string> Citizenships { get; set; }
         public List<string> Residences { get; set; }
         public List<string> MatchingLegalCategories { get; set; }
+        public string SpiderProfileId { get; set; }
     }
 
     public class KycCheckPersonResult : TableEntity, IKycCheckPersonResult
@@ -23,6 +24,7 @@ namespace Lykke.Job.BackgroundWorker.AzureRepositories.KycCheck
         public List<IKycCheckPersonProfile> PersonProfiles { get; set; }
         public string Id { get; set; }
         public long VerificationId { get; set; }
+        public string ResponseId { get; set; }
     }
 
     public class KycCheckPersonResultEntity : TableEntity

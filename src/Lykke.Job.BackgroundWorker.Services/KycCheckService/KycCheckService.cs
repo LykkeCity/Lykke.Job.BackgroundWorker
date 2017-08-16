@@ -69,7 +69,7 @@ namespace Lykke.Job.BackgroundWorker.Services.KycCheckService
                 VerificationId = response.@return.verificationId
             };
 
-            if (response.@return.personProfiles.Length > 0)
+            if (response.@return.personProfiles?.Length > 0)
             {
                 List<IKycCheckPersonProfile> profs = new List<IKycCheckPersonProfile>();
                 foreach (PersonProfile resultProfile in response.@return.personProfiles)
@@ -79,6 +79,7 @@ namespace Lykke.Job.BackgroundWorker.Services.KycCheckService
                     p.Citizenships = resultProfile.citizenships.ToList();
                     p.Residences = resultProfile.residences.ToList();
                     p.MatchingLegalCategories = resultProfile.matchingLegalCategories.Select(_ => _.ToLower()).ToList();
+                    p.SpiderProfileId = resultProfile.id;
 
                     List<String> datesOfBirth = new List<string>();
                     foreach (IncompleteDate d in resultProfile.datesOfBirth)

@@ -10,6 +10,7 @@ namespace Lykke.Job.BackgroundWorker.Core.Domain.KycCheckService
         List<string> Citizenships { get; set; }
         List<string> Residences { get; set; }
         List<string> MatchingLegalCategories { get; set; }
+        string SpiderProfileId { get; set; }
     }
 
     public interface IKycCheckPersonResult
