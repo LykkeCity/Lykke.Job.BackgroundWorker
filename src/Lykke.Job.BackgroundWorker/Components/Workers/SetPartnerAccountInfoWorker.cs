@@ -39,16 +39,17 @@ namespace Lykke.Job.BackgroundWorker.Components.Workers
 
             string email = _context.Email;
             //accounts for the same email
-            var clientIds = await _clientAccountRepository.GetIdsAsync(email);
+            IEnumerable<IClientAccount> accounts = await _clientAccountRepository.GetByEmailAsync(email);
 
-            if (clientIds == null || clientIds.Count() <= 1)
+            if (accounts == null || accounts.Count() <= 1)
             {
                 return;
             }
-            
-            var clientKycStatuses = await _kycRepository.GetKycStatusAsync(clientIds);
 
-            var passedKycClientId = clientKycStatuses.FirstOrDefault(x => x.Value == KycStatus.Ok).Key;
+            var clientIds = accounts.Select(x => x.Id);
+            IDictionary<string, KycStatus> clientKycStatuses = await _kycRepository.GetKycStatusAsync(clientIds);
+
+            var passedKycClientId = clientKycStatuses.Where(x => x.Value == KycStatus.Ok).FirstOrDefault().Key;
 
             if (passedKycClientId != null)
             {
@@ -63,7 +64,7 @@ namespace Lykke.Job.BackgroundWorker.Components.Workers
                 {
                     IFullPersonalData oldPersonalData;
                     oldFullPersonalDataDict.TryGetValue(clientId, out oldPersonalData);
-                    IFullPersonalData newPersonalData = new FullPersonalDataModel
+                    IFullPersonalData newPersonalData = new FullPersonalDataModel()
                     {
                         Address = personalData.Address,
                         City = personalData.City,
