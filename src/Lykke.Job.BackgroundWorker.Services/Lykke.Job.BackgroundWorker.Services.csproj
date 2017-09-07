@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Flurl.Http" Version="1.1.2" />
-    <PackageReference Include="Lykke.Common" Version="1.1.79" />
+    <PackageReference Include="Lykke.Common" Version="1.1.95" />
+    <PackageReference Include="System.ServiceModel.Http" Version="4.4.0" />
     <PackageReference Include="Lykke.Service.PersonalData" Version="1.0.12-beta34" />
-    <PackageReference Include="System.ServiceModel.Http" Version="4.4.0-preview2-25419-01" />
     <PackageReference Include="System.Xml.XmlSerializer" Version="4.3.0" />
   </ItemGroup>
 
