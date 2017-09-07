@@ -5,7 +5,6 @@ using AzureStorage.Tables;
 using Common.Log;
 using Lykke.Common.ApiLibrary.Middleware;
 using Lykke.Common.ApiLibrary.Swagger;
-using Lykke.Job.BackgroundWorker.Core;
 using Lykke.Job.BackgroundWorker.Models;
 using Lykke.Job.BackgroundWorker.Modules;
 using Lykke.Job.BackgroundWorker.Services;
@@ -58,7 +57,7 @@ namespace Lykke.Job.BackgroundWorker
                 : HttpSettingsLoader.Load<AppSettings>(Configuration.GetValue<string>("SettingsUrl"));
             var log = CreateLogWithSlack(services, appSettings);
 
-            builder.RegisterModule(new JobModule(appSettings.BackgroundWorkerJob, log));
+            builder.RegisterModule(new JobModule(appSettings, log));
 
             if (string.IsNullOrWhiteSpace(appSettings.BackgroundWorkerJob.Db.ClientPersonalInfoConnString))
             {
