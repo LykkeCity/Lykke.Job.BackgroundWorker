@@ -6,7 +6,6 @@ namespace Lykke.Job.BackgroundWorker.Services
     {
         public BackgroundWorkerSettings BackgroundWorkerJob { get; set; }
         public SlackNotificationsSettings SlackNotifications { get; set; }
-        public OperationsRepositoryClientSettings OperationsRepositoryClient { get; set; }
 
         public class BackgroundWorkerSettings
         {
@@ -41,12 +40,6 @@ namespace Lykke.Job.BackgroundWorker.Services
             public string ConnectionString { get; set; }
 
             public string QueueName { get; set; }
-        }
-
-        public class OperationsRepositoryClientSettings
-        {
-            public string ServiceUrl { get; set; }
-            public int RequestTimeout { get; set; }
         }
     }
 }
