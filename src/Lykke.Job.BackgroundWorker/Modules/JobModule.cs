@@ -28,12 +28,10 @@ namespace Lykke.Job.BackgroundWorker.Modules
         private readonly AppSettings.BackgroundWorkerSettings _settings;
         private readonly ILog _log;
         private readonly AppSettings.DbSettings _dbSettings;
-        private readonly AppSettings.OperationsRepositoryClientSettings _repositorySettings;
 
         public JobModule(AppSettings settings, ILog log)
         {
             _settings = settings.BackgroundWorkerJob;
-            _repositorySettings = settings.OperationsRepositoryClient;
             _dbSettings = _settings.Db;
             _log = log;
         }
