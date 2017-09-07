@@ -6,7 +6,9 @@ using Common;
 using Lykke.Job.BackgroundWorker.Contract.Contexts;
 using Lykke.Job.BackgroundWorker.Core.Domain.Clients;
 using Lykke.Job.BackgroundWorker.Core.Domain.Kyc;
-using Lykke.Job.BackgroundWorker.Core.Services.PersonalData;
+using Lykke.Service.PersonalData.Client.Models;
+using Lykke.Service.PersonalData.Contract;
+using Lykke.Service.PersonalData.Contract.Models;
 
 namespace Lykke.Job.BackgroundWorker.Components.Workers
 {
@@ -62,7 +64,7 @@ namespace Lykke.Job.BackgroundWorker.Components.Workers
                 {
                     IFullPersonalData oldPersonalData;
                     oldFullPersonalDataDict.TryGetValue(clientId, out oldPersonalData);
-                    IFullPersonalData newPersonalData = new FullPersonalData()
+                    IFullPersonalData newPersonalData = new FullPersonalDataModel()
                     {
                         Address = personalData.Address,
                         City = personalData.City,

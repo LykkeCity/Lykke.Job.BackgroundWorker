@@ -9,6 +9,7 @@ using Lykke.Common.ApiLibrary.Swagger;
 using Lykke.Job.BackgroundWorker.Core;
 using Lykke.Job.BackgroundWorker.Models;
 using Lykke.Job.BackgroundWorker.Modules;
+using Lykke.Job.BackgroundWorker.Services;
 using Lykke.JobTriggers.Extenstions;
 using Lykke.JobTriggers.Triggers;
 using Lykke.Logs;

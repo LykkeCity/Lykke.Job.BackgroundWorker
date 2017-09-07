@@ -3,8 +3,6 @@ using System.Threading.Tasks;
 
 namespace Lykke.Job.BackgroundWorker.Core.Domain.KycCheckService
 {
-    public enum MatchingLegalCategoryType { Sanction, Pep, Int_Pep, Ch_Pep, Pep_Rca, Ctrl_Org, Crime, Blacklist, Information, Reputation }
-
     public interface IKycCheckPersonProfile
     {
         string Name { get; set; }
@@ -12,6 +10,7 @@ namespace Lykke.Job.BackgroundWorker.Core.Domain.KycCheckService
         List<string> Citizenships { get; set; }
         List<string> Residences { get; set; }
         List<string> MatchingLegalCategories { get; set; }
+        string SpiderProfileId { get; set; }
     }
 
     public interface IKycCheckPersonResult
@@ -23,7 +22,6 @@ namespace Lykke.Job.BackgroundWorker.Core.Domain.KycCheckService
 
     public interface IKycCheckPersonResultRepository
     {
-        void SaveAsync(IKycCheckPersonResult obj);
-        Task<IKycCheckPersonResult> GetAsync(string id);
+        Task SaveAsync(IKycCheckPersonResult obj);
     }
 }

@@ -9,18 +9,17 @@ using Lykke.Job.BackgroundWorker.AzureRepositories.Kyc;
 using Lykke.Job.BackgroundWorker.AzureRepositories.KycCheck;
 using Lykke.Job.BackgroundWorker.Components;
 using Lykke.Job.BackgroundWorker.Components.Workers;
-using Lykke.Job.BackgroundWorker.Core;
 using Lykke.Job.BackgroundWorker.Core.Domain.Clients;
 using Lykke.Job.BackgroundWorker.Core.Domain.EventLogs;
 using Lykke.Job.BackgroundWorker.Core.Domain.Kyc;
 using Lykke.Job.BackgroundWorker.Core.Domain.KycCheckService;
 using Lykke.Job.BackgroundWorker.Core.Services;
 using Lykke.Job.BackgroundWorker.Core.Services.Geospatial;
-using Lykke.Job.BackgroundWorker.Core.Services.PersonalData;
 using Lykke.Job.BackgroundWorker.Services;
 using Lykke.Job.BackgroundWorker.Services.Geospatial;
-using Lykke.Job.BackgroundWorker.Services.PersonalData;
-using Lykke.Service.OperationsRepository.Client;
+using Lykke.Job.BackgroundWorker.Services.KycCheckService;
+using Lykke.Service.PersonalData.Client;
+using Lykke.Service.PersonalData.Contract;
 
 namespace Lykke.Job.BackgroundWorker.Modules
 {
@@ -29,12 +28,10 @@ namespace Lykke.Job.BackgroundWorker.Modules
         private readonly AppSettings.BackgroundWorkerSettings _settings;
         private readonly ILog _log;
         private readonly AppSettings.DbSettings _dbSettings;
-        private readonly AppSettings.OperationsRepositoryClientSettings _repositorySettings;
 
         public JobModule(AppSettings settings, ILog log)
         {
             _settings = settings.BackgroundWorkerJob;
-            _repositorySettings = settings.OperationsRepositoryClient;
             _dbSettings = _settings.Db;
             _log = log;
         }
@@ -43,6 +40,8 @@ namespace Lykke.Job.BackgroundWorker.Modules
         {
             builder.RegisterInstance(_settings)
                 .SingleInstance();
+
+            builder.RegisterInstance(_settings.KycSpiderSettings);
 
             builder.RegisterInstance(_log)
                 .As<ILog>()
@@ -60,10 +59,10 @@ namespace Lykke.Job.BackgroundWorker.Modules
 
             builder.RegisterType<SetPinWorker>();
             builder.RegisterType<SetAuthLogGeolocationWorker>();
-            builder.RegisterType<UpdateHashForOperationsWorker>();
             builder.RegisterType<SetPartnerAccountInfoWorker>();
-            builder.RegisterType<CheckPersonWorker>()
-                .WithParameter(TypedParameter.From(_settings.KycSpiderSettings));
+
+            builder.RegisterType<KycCheckService>();
+            builder.RegisterType<CheckPersonWorker>();
 
             BindRepositories(builder);
             BindServices(builder);
@@ -76,9 +75,6 @@ namespace Lykke.Job.BackgroundWorker.Modules
             builder.RegisterType<PersonalDataService>()
                 .As<IPersonalDataService>()
                 .WithParameter(TypedParameter.From(_settings.PersonalDataServiceSettings));
-
-            builder.RegisterOperationsRepositoryClients(_repositorySettings.ServiceUrl, _log,
-                _repositorySettings.RequestTimeout);
         }
 
         private void BindRepositories(ContainerBuilder builder)
@@ -88,11 +84,7 @@ namespace Lykke.Job.BackgroundWorker.Modules
                 new AzureTableStorage<ClientAccountEntity>(_dbSettings.ClientPersonalInfoConnString, "Traders", _log),
                 new AzureTableStorage<ClientPartnerRelationEntity>(_dbSettings.ClientPersonalInfoConnString, "ClientPartnerRelations", _log),
                 new AzureTableStorage<AzureIndex>(_dbSettings.ClientPersonalInfoConnString, "Traders", _log)));
-
-            builder.RegisterInstance<IPersonalDataRepository>(
-                new PersonalDataRepository(
-                    new AzureTableStorage<PersonalDataEntity>(_dbSettings.ClientPersonalInfoConnString, "PersonalData", _log)));
-
+            
             builder.RegisterInstance<IAuthorizationLogsRepository>(
                 new AuthorizationLogsRepository(
                     new AzureTableStorage<AuthorizationLogRecordEntity>(_dbSettings.LogsConnString, "AuthLogs", _log)));

@@ -2,9 +2,6 @@
 using System.Threading.Tasks;
 using Common;
 using Lykke.Job.BackgroundWorker.Contract.Contexts;
-using Lykke.Job.BackgroundWorker.Core;
-using Lykke.Job.BackgroundWorker.Core.Domain.Clients;
-using Lykke.Job.BackgroundWorker.Core.Domain.KycCheckService;
 using Lykke.Job.BackgroundWorker.Services.KycCheckService;
 
 namespace Lykke.Job.BackgroundWorker.Components.Workers
@@ -12,19 +9,12 @@ namespace Lykke.Job.BackgroundWorker.Components.Workers
     public class CheckPersonWorker: IWorker
     {
         private CheckPersonContext _context;
-        private readonly IKycCheckPersonResultRepository _kycCheckPersonResultRepository;
-        private readonly IPersonalDataRepository _personalDataRepository;
-        private readonly AppSettings.KycSpiderSettings _kycSpiderSettings;
+        private readonly KycCheckService _kycCheckService;
 
 
-        public CheckPersonWorker(
-            IPersonalDataRepository personalDataRepository, 
-            IKycCheckPersonResultRepository kycCheckPersonResultRepository, 
-            AppSettings.KycSpiderSettings kycSpiderSettings)
+        public CheckPersonWorker(KycCheckService kycCheckService)
         {
-            _kycCheckPersonResultRepository = kycCheckPersonResultRepository;
-            _personalDataRepository = personalDataRepository;
-            _kycSpiderSettings = kycSpiderSettings;
+            _kycCheckService = kycCheckService;
         }
 
         public async Task DoWork()
@@ -32,10 +22,7 @@ namespace Lykke.Job.BackgroundWorker.Components.Workers
             if (_context == null)
                 throw new Exception("context was not set");
 
-            IPersonalData personalData = await _personalDataRepository.GetAsync(_context.ClientId);
-
-            KycCheckService s = new KycCheckService();
-            s.CheckPerson(personalData, _kycCheckPersonResultRepository, _kycSpiderSettings);
+            await _kycCheckService.CheckPerson(_context.ClientId);
        }
 
         public void SetContext(string contextJson)

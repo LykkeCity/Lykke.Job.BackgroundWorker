@@ -1,4 +1,6 @@
-﻿namespace Lykke.Job.BackgroundWorker.Core
+﻿using Lykke.Service.PersonalData.Settings;
+
+namespace Lykke.Job.BackgroundWorker.Services
 {
     public class AppSettings
     {
@@ -18,13 +20,6 @@
             public string LogsConnString { get; set; }
             public string ClientPersonalInfoConnString { get; set; }
             public string HTradesConnString { get; set; }
-        }
-
-        public class PersonalDataServiceSettings
-        {
-            public string ServiceUri { get; set; }
-
-            public string ApiKey { get; set; }
         }
 
         public class KycSpiderSettings

@@ -8,14 +8,12 @@ namespace Lykke.Job.BackgroundWorker.Components
     {
         private readonly Lazy<SetPinWorker> _setPinWorker;
         private readonly Lazy<SetAuthLogGeolocationWorker> _authLogGeoWorker;
-        private readonly Lazy<UpdateHashForOperationsWorker> _updateHashWorker;
         private readonly Lazy<SetPartnerAccountInfoWorker> _setPartnerAccountInfoWorker;
         private readonly Lazy<CheckPersonWorker> _checkPersonWorker;
 
         public WorkersFactory(
             Lazy<SetPinWorker> setPinWorker,
             Lazy<SetAuthLogGeolocationWorker> authLogGeoWorker,
-            Lazy<UpdateHashForOperationsWorker> updateHashWorker,
             Lazy<SetPartnerAccountInfoWorker> setPartnerAccountInfoWorker,
             Lazy<CheckPersonWorker> checkPersonWorker
         )
@@ -23,7 +21,6 @@ namespace Lykke.Job.BackgroundWorker.Components
         {
             _setPinWorker = setPinWorker;
             _authLogGeoWorker = authLogGeoWorker;
-            _updateHashWorker = updateHashWorker;
             _setPartnerAccountInfoWorker = setPartnerAccountInfoWorker;
             _checkPersonWorker = checkPersonWorker;
         }
@@ -42,9 +39,6 @@ namespace Lykke.Job.BackgroundWorker.Components
                     break;
                 case WorkType.SetPartnerClientAccountInfo:
                     worker = _setPartnerAccountInfoWorker.Value;
-                    break;
-                case WorkType.UpdateHashForOperations:
-                    worker = _updateHashWorker.Value;
                     break;
                 case WorkType.CheckPerson:
                     worker = _checkPersonWorker.Value;

@@ -16,6 +16,7 @@ namespace Lykke.Job.BackgroundWorker.AzureRepositories.KycCheck
         public List<string> Citizenships { get; set; }
         public List<string> Residences { get; set; }
         public List<string> MatchingLegalCategories { get; set; }
+        public string SpiderProfileId { get; set; }
     }
 
     public class KycCheckPersonResult : TableEntity, IKycCheckPersonResult
@@ -23,6 +24,7 @@ namespace Lykke.Job.BackgroundWorker.AzureRepositories.KycCheck
         public List<IKycCheckPersonProfile> PersonProfiles { get; set; }
         public string Id { get; set; }
         public long VerificationId { get; set; }
+        public string ResponseId { get; set; }
     }
 
     public class KycCheckPersonResultEntity : TableEntity
@@ -41,40 +43,21 @@ namespace Lykke.Job.BackgroundWorker.AzureRepositories.KycCheck
             _tableStorage = tableStorage;
         }
 
-        public async Task<IKycCheckPersonResult> GetAsync(string id)
+        public async Task SaveAsync(IKycCheckPersonResult res)
         {
-            KycCheckPersonResultEntity entity = await _tableStorage.GetTopRecordAsync(id);
-            if (entity != null)
+            KycCheckPersonResultEntity entity = new KycCheckPersonResultEntity
             {
-                IKycCheckPersonResult result = new KycCheckPersonResult();
-                if (entity.PersonProfiles != null)
-                {
-                    List<KycCheckPersonProfile> profiles = entity.PersonProfiles.DeserializeJson<List<KycCheckPersonProfile>>();
-                    if (profiles != null)
-                    {
-                        result.PersonProfiles = new List<IKycCheckPersonProfile>();
-                        result.PersonProfiles.AddRange(profiles);
-                    }
-                }
-                return result;
-            }
-            return null;
-        }
+                PartitionKey = res.Id,
+                RowKey = (long.MaxValue - DateTime.UtcNow.Ticks).ToString(),
+                VerificationId = res.VerificationId
+            };
 
-        public async void SaveAsync(IKycCheckPersonResult res)
-        {
-            KycCheckPersonResultEntity entity = new KycCheckPersonResultEntity();
-            entity.PartitionKey = res.Id;
-            entity.RowKey = (long.MaxValue - DateTime.UtcNow.Ticks).ToString();
-            entity.VerificationId = res.VerificationId;
             if (res.PersonProfiles != null)
             {
                 entity.PersonProfiles = res.PersonProfiles.ToJson();
             }
+
             await _tableStorage.InsertOrReplaceAsync(entity);
         }
-
-
-
     }
 }

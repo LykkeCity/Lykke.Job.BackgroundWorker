@@ -306,5 +306,4 @@ namespace Lykke.Job.BackgroundWorker.AzureRepositories.Clients
             return string.IsNullOrEmpty(partnerId) ? $"{lowEmail}" : $"{lowEmail}_{partnerId}";
         }
     }
-
 }
