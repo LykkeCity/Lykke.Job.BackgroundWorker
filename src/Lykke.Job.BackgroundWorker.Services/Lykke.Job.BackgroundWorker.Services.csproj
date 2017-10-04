@@ -5,11 +5,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Flurl.Http" Version="1.1.2" />
-    <PackageReference Include="Lykke.Common" Version="1.1.95" />
+    <PackageReference Include="Flurl.Http" Version="1.2.0" />
+    <PackageReference Include="Lykke.Common" Version="1.1.97" />
     <PackageReference Include="System.ServiceModel.Http" Version="4.4.0" />
     <PackageReference Include="Lykke.Service.PersonalData" Version="1.0.14" />
     <PackageReference Include="System.Xml.XmlSerializer" Version="4.3.0" />
+    <PackageReference Include="Lykke.Service.Kyc.Abstractions" Version="1.0.11-beta" />
+    <PackageReference Include="Lykke.Service.Kyc.Client" Version="1.0.8-beta" />
   </ItemGroup>
 
   <ItemGroup>

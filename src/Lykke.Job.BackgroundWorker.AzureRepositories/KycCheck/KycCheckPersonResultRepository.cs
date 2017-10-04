@@ -1,4 +1,5 @@
-﻿using System;
+﻿/*
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AzureStorage;
@@ -61,3 +62,4 @@ namespace Lykke.Job.BackgroundWorker.AzureRepositories.KycCheck
         }
     }
 }
+*/

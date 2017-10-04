@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿/*
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Lykke.Job.BackgroundWorker.Core.Domain.KycCheckService
@@ -25,3 +26,4 @@ namespace Lykke.Job.BackgroundWorker.Core.Domain.KycCheckService
         Task SaveAsync(IKycCheckPersonResult obj);
     }
 }
+*/

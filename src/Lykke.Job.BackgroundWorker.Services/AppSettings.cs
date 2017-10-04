@@ -1,4 +1,5 @@
-﻿using Lykke.Service.PersonalData.Settings;
+﻿using Lykke.Service.Kyc.Client;
+using Lykke.Service.PersonalData.Settings;
 
 namespace Lykke.Job.BackgroundWorker.Services
 {
@@ -12,6 +13,7 @@ namespace Lykke.Job.BackgroundWorker.Services
             public DbSettings Db { get; set; }
             public KycSpiderSettings KycSpiderSettings { get; set; }
             public PersonalDataServiceSettings PersonalDataServiceSettings { get; set; }
+            public KycServiceSettings KycServiceSettings { get; set; }
         }
 
         public class DbSettings

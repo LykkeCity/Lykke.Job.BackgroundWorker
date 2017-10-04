@@ -3,26 +3,28 @@ using System.Collections.Generic;
 using System.Linq;
 using System.ServiceModel;
 using System.Threading.Tasks;
-using Lykke.Job.BackgroundWorker.AzureRepositories.KycCheck;
-using Lykke.Job.BackgroundWorker.Core.Domain.KycCheckService;
 using Lykke.Service.PersonalData.Contract;
 using Lykke.Service.PersonalData.Contract.Models;
+using Lykke.Service.Kyc.Abstractions.Services;
+using Lykke.Service.Kyc.Abstractions.Domain.Verification;
+using static Lykke.Job.BackgroundWorker.Services.AppSettings;
 
 namespace Lykke.Job.BackgroundWorker.Services.KycCheckService
 {
     public class KycCheckService
     {
         private readonly IPersonalDataService _personalDataService;
-        private readonly IKycCheckPersonResultRepository _kycCheckPersonResultRepository;
         private readonly AppSettings.KycSpiderSettings _settings;
+        private readonly IKycStatusService _kycStatusService;
 
         public KycCheckService(IPersonalDataService personalDataService,
-            IKycCheckPersonResultRepository kycCheckPersonResultRepository,
-            AppSettings.KycSpiderSettings settings)
+            KycSpiderSettings settings,
+            IKycStatusService kycStatusService
+            )
         {
             _personalDataService = personalDataService;
-            _kycCheckPersonResultRepository = kycCheckPersonResultRepository;
             _settings = settings;
+            _kycStatusService = kycStatusService;
         }
 
         public async Task CheckPerson(string clientId)
@@ -30,9 +32,9 @@ namespace Lykke.Job.BackgroundWorker.Services.KycCheckService
             var personalData = await _personalDataService.GetAsync(clientId);
             PersonCheckData checkData = new PersonCheckData
             {
-                residences = new string[] {},
-                citizenships = new string[] {},
-                datesOfBirth = new IncompleteDate[] {},
+                residences = new string[] { },
+                citizenships = new string[] { },
+                datesOfBirth = new IncompleteDate[] { },
                 customerId = personalData.Id,
                 names = new[]
                 {
@@ -40,10 +42,10 @@ namespace Lykke.Job.BackgroundWorker.Services.KycCheckService
                 }
             };
 
-            checkData.citizenships = new [] {
+            checkData.citizenships = new[] {
                 personalData.CountryFromID
             };
-            checkData.datesOfBirth = new [] {
+            checkData.datesOfBirth = new[] {
                 new IncompleteDate { year = personalData.DateOfBirth?.Year ?? -1, month = personalData.DateOfBirth?.Month ?? -1, day = personalData.DateOfBirth?.Day ?? -1 }
             };
             checkPerson request = new checkPerson(checkData);
@@ -58,10 +60,27 @@ namespace Lykke.Job.BackgroundWorker.Services.KycCheckService
             accessChannel channel = factory.CreateChannel();
             checkPersonResponse response = await channel.checkPersonAsync(request);
 
-            await SaveCheckPersonResult(personalData, response);
+            KycCheckPersonResult result = FillCheckPersonResult(personalData, response);
+            if (!isPersonSuspicious(result)) // change status automatically from ReviewDone to Ok
+            {
+                if (await _kycStatusService.GetKycStatusAsync(clientId) == KycStatus.ReviewDone)
+                {
+                    await _kycStatusService.ChangeKycStatusAsync(clientId, KycStatus.Ok, "KycCheckPersonService");
+                }
+            }
+            await _kycStatusService.SaveCheckPersonResultAsync(result);
         }
 
-        public async Task SaveCheckPersonResult(IPersonalData personalData, checkPersonResponse response)
+        private bool isPersonSuspicious(KycCheckPersonResult result)
+        {
+            if (result.PersonProfiles == null || result.PersonProfiles.Count() == 0)
+            {
+                return false;
+            }
+            return true;
+        }
+
+        public KycCheckPersonResult FillCheckPersonResult(IPersonalData personalData, checkPersonResponse response)
         {
             KycCheckPersonResult resultObject = new KycCheckPersonResult
             {
@@ -106,7 +125,7 @@ namespace Lykke.Job.BackgroundWorker.Services.KycCheckService
                 resultObject.PersonProfiles = profs.ToList();
             }
 
-            await _kycCheckPersonResultRepository.SaveAsync(resultObject);
+            return resultObject;
 
         }
     }
