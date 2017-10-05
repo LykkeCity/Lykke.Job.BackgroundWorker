@@ -51,6 +51,7 @@ namespace Lykke.Job.BackgroundWorker.Services.KycCheckService
             checkPerson request = new checkPerson(checkData);
 
             BasicHttpsBinding binding = new BasicHttpsBinding(BasicHttpsSecurityMode.Transport);
+            binding.MaxReceivedMessageSize = 1024 * 512;
             binding.Security.Transport.ClientCredentialType = HttpClientCredentialType.Basic;
             EndpointAddress epa = new EndpointAddress(_settings.EndpointUrl);
             ChannelFactory<accessChannel> factory = new ChannelFactory<accessChannel>(binding, epa);
