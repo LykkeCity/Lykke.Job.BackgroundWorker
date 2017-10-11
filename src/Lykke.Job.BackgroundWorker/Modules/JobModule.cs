@@ -22,28 +22,29 @@ using Lykke.Job.BackgroundWorker.Services.Geospatial;
 using Lykke.Job.BackgroundWorker.Services.KycCheckService;
 using Lykke.Service.PersonalData.Client;
 using Lykke.Service.PersonalData.Contract;
+using Lykke.SettingsReader;
 
 namespace Lykke.Job.BackgroundWorker.Modules
 {
     public class JobModule : Module
     {
-        private readonly AppSettings.BackgroundWorkerSettings _settings;
+        private readonly IReloadingManager<AppSettings.BackgroundWorkerSettings> _settings;
         private readonly ILog _log;
-        private readonly AppSettings.DbSettings _dbSettings;
+        private readonly IReloadingManager<AppSettings.DbSettings> _dbSettings;
 
-        public JobModule(AppSettings.BackgroundWorkerSettings settings, ILog log)
+        public JobModule(IReloadingManager<AppSettings.BackgroundWorkerSettings> settings, ILog log)
         {
             _settings = settings;
-            _dbSettings = settings.Db;
+            _dbSettings = settings.Nested(x => x.Db);
             _log = log;
         }
 
         protected override void Load(ContainerBuilder builder)
         {
-            builder.RegisterInstance(_settings)
+            builder.RegisterInstance(_settings.CurrentValue)
                 .SingleInstance();
 
-            builder.RegisterInstance(_settings.KycSpiderSettings);
+            builder.RegisterInstance(_settings.CurrentValue.KycSpiderSettings);
 
             builder.RegisterInstance(_log)
                 .As<ILog>()
@@ -73,49 +74,60 @@ namespace Lykke.Job.BackgroundWorker.Modules
         private void BindServices(ContainerBuilder builder)
         {
             builder.RegisterType<SrvIpGeolocation>().As<ISrvIpGetLocation>().SingleInstance();
-            
+
             builder.RegisterType<PersonalDataService>()
                 .As<IPersonalDataService>()
-                .WithParameter(TypedParameter.From(_settings.PersonalDataServiceSettings));
+                .WithParameter(TypedParameter.From(_settings.CurrentValue.PersonalDataServiceSettings));
         }
 
         private void BindRepositories(ContainerBuilder builder)
         {
             builder.RegisterInstance<ICashOperationsRepository>(
                 new CashOperationsRepository(
-                    new AzureTableStorage<CashInOutOperationEntity>(_dbSettings.ClientPersonalInfoConnString, "OperationsCash", _log),
-                    new AzureTableStorage<AzureIndex>(_dbSettings.ClientPersonalInfoConnString, "OperationsCash", _log))
-            );
+                    AzureTableStorage<CashInOutOperationEntity>.Create(
+                        _dbSettings.ConnectionString(s => s.ClientPersonalInfoConnString), "OperationsCash", _log),
+                    AzureTableStorage<AzureIndex>.Create(
+                        _dbSettings.ConnectionString(s => s.ClientPersonalInfoConnString), "OperationsCash", _log)
+                ));
 
-            builder.RegisterInstance<IClientTradesRepository>(
-                new ClientTradesRepository(new AzureTableStorage<ClientTradeEntity>(_dbSettings.HTradesConnString, "Trades", _log)));
+            builder.RegisterInstance<IClientTradesRepository>(new ClientTradesRepository(
+                AzureTableStorage<ClientTradeEntity>.Create(_dbSettings.ConnectionString(x => x.HTradesConnString),
+                    "Trades", _log)));
 
             builder.RegisterInstance<ITransferEventsRepository>(
                 new TransferEventsRepository(
-                    new AzureTableStorage<TransferEventEntity>(_dbSettings.ClientPersonalInfoConnString, "Transfers", _log),
-                    new AzureTableStorage<AzureIndex>(_dbSettings.ClientPersonalInfoConnString, "Transfers", _log)));
+                    AzureTableStorage<TransferEventEntity>.Create(
+                        _dbSettings.ConnectionString(s => s.ClientPersonalInfoConnString), "Transfers", _log),
+                    AzureTableStorage<AzureIndex>.Create(
+                        _dbSettings.ConnectionString(s => s.ClientPersonalInfoConnString), "Transfers", _log)));
 
             builder.RegisterInstance<IClientAccountsRepository>(
-            new ClientsRepository(
-                new AzureTableStorage<ClientAccountEntity>(_dbSettings.ClientPersonalInfoConnString, "Traders", _log),
-                new AzureTableStorage<ClientPartnerRelationEntity>(_dbSettings.ClientPersonalInfoConnString, "ClientPartnerRelations", _log),
-                new AzureTableStorage<AzureIndex>(_dbSettings.ClientPersonalInfoConnString, "Traders", _log)));
-            
+                new ClientsRepository(
+                    AzureTableStorage<ClientAccountEntity>.Create(
+                        _dbSettings.ConnectionString(x => x.ClientPersonalInfoConnString), "Traders", _log),
+                    AzureTableStorage<ClientPartnerRelationEntity>.Create(
+                        _dbSettings.ConnectionString(s => s.ClientPersonalInfoConnString), "ClientPartnerRelations",
+                        _log),
+                    AzureTableStorage<AzureIndex>.Create(
+                        _dbSettings.ConnectionString(s => s.ClientPersonalInfoConnString), "Traders", _log)));
+
             builder.RegisterInstance<IAuthorizationLogsRepository>(
                 new AuthorizationLogsRepository(
-                    new AzureTableStorage<AuthorizationLogRecordEntity>(_dbSettings.LogsConnString, "AuthLogs", _log)));
+                    AzureTableStorage<AuthorizationLogRecordEntity>.Create(
+                        _dbSettings.ConnectionString(s => s.LogsConnString), "AuthLogs", _log)));
 
             builder.RegisterInstance<IKycDocumentsRepository>(
                 new KycDocumentsRepository(
-                    new AzureTableStorage<KycDocumentEntity>(_dbSettings.ClientPersonalInfoConnString, "KycDocuments", _log)));
+                    AzureTableStorage<KycDocumentEntity>.Create(
+                        _dbSettings.ConnectionString(s => s.ClientPersonalInfoConnString), "KycDocuments", _log)));
 
-            builder.RegisterInstance<IKycRepository>(
-                new KycRepository(new AzureTableStorage<KycEntity>(_dbSettings.ClientPersonalInfoConnString, "KycStatuses", _log)));
+            builder.RegisterInstance<IKycRepository>(new KycRepository(
+                AzureTableStorage<KycEntity>.Create(_dbSettings.ConnectionString(s => s.ClientPersonalInfoConnString),
+                    "KycStatuses", _log)));
 
-            builder.RegisterInstance<IKycCheckPersonResultRepository>(
-                new KycCheckPersonResultRepository(
-                    new AzureTableStorage<KycCheckPersonResultEntity>(_dbSettings.ClientPersonalInfoConnString, "KycCheckPersonResults", _log)));
-
+            builder.RegisterInstance<IKycCheckPersonResultRepository>(new KycCheckPersonResultRepository(
+                AzureTableStorage<KycCheckPersonResultEntity>.Create(
+                    _dbSettings.ConnectionString(s => s.ClientPersonalInfoConnString), "KycCheckPersonResults", _log)));
         }
     }
 }
