@@ -10,7 +10,6 @@ using Lykke.Job.BackgroundWorker.AzureRepositories.Kyc;
 using Lykke.Job.BackgroundWorker.AzureRepositories.KycCheck;
 using Lykke.Job.BackgroundWorker.Components;
 using Lykke.Job.BackgroundWorker.Components.Workers;
-using Lykke.Job.BackgroundWorker.Core;
 using Lykke.Job.BackgroundWorker.Core.Domain.CashOperations;
 using Lykke.Job.BackgroundWorker.Core.Domain.Clients;
 using Lykke.Job.BackgroundWorker.Core.Domain.EventLogs;
