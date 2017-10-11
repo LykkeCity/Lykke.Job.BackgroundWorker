@@ -12,8 +12,16 @@ namespace Lykke.Job.BackgroundWorker
     {
         static void Main(string[] args)
         {
+            Console.WriteLine(
+                $"BackgroundWorker version: {Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion}");
+#if DEBUG
+            Console.WriteLine("Starting... Is DEBUG");
+#else
+            Console.WriteLine("Starting... Is RELEASE");
+
+#endif
+
             var webHostCancellationTokenSource = new CancellationTokenSource();
-            IWebHost webHost = null;
             TriggerHost triggerHost = null;
             Task webHostTask = null;
             Task triggerHostTask = null;
@@ -30,7 +38,7 @@ namespace Lykke.Job.BackgroundWorker
                     end.WaitOne();
                 };
 
-                webHost = new WebHostBuilder()
+                var webHost = new WebHostBuilder()
                     .UseKestrel()
                     .UseUrls("http://*:5000")
                     .UseContentRoot(Directory.GetCurrentDirectory())
@@ -40,7 +48,7 @@ namespace Lykke.Job.BackgroundWorker
 
                 triggerHost = new TriggerHost(webHost.Services);
 
-                webHostTask = Task.Factory.StartNew(() => webHost.Run(webHostCancellationTokenSource.Token));
+                webHostTask = webHost.RunAsync(webHostCancellationTokenSource.Token);
                 triggerHostTask = triggerHost.Start();
 
                 // WhenAny to handle any task termination with exception, 
