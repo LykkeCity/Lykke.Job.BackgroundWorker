@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Lykke.Job.BackgroundWorker.Core.Domain.KycCheckService
 {
@@ -9,6 +10,7 @@ namespace Lykke.Job.BackgroundWorker.Core.Domain.KycCheckService
         List<string> Citizenships { get; set; }
         List<string> Residences { get; set; }
         List<string> MatchingLegalCategories { get; set; }
+        string SpiderProfileId { get; set; }
     }
 
     public interface IKycCheckPersonResult
@@ -20,6 +22,6 @@ namespace Lykke.Job.BackgroundWorker.Core.Domain.KycCheckService
 
     public interface IKycCheckPersonResultRepository
     {
-        void SaveAsync(IKycCheckPersonResult obj);
+        Task SaveAsync(IKycCheckPersonResult obj);
     }
 }
