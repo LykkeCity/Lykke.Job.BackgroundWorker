@@ -28,14 +28,14 @@ namespace Lykke.Job.BackgroundWorker.Modules
 {
     public class JobModule : Module
     {
-        private readonly IReloadingManager<AppSettings.BackgroundWorkerSettings> _settings;
+        private readonly IReloadingManager<AppSettings> _settings;
         private readonly ILog _log;
         private readonly IReloadingManager<AppSettings.DbSettings> _dbSettings;
 
-        public JobModule(IReloadingManager<AppSettings.BackgroundWorkerSettings> settings, ILog log)
+        public JobModule(IReloadingManager<AppSettings> settings, ILog log)
         {
             _settings = settings;
-            _dbSettings = settings.Nested(x => x.Db);
+            _dbSettings = settings.Nested(x => x.BackgroundWorkerJob.Db);
             _log = log;
         }
 
@@ -44,7 +44,7 @@ namespace Lykke.Job.BackgroundWorker.Modules
             builder.RegisterInstance(_settings.CurrentValue)
                 .SingleInstance();
 
-            builder.RegisterInstance(_settings.CurrentValue.KycSpiderSettings);
+            builder.RegisterInstance(_settings.CurrentValue.BackgroundWorkerJob.KycSpiderSettings);
 
             builder.RegisterInstance(_log)
                 .As<ILog>()

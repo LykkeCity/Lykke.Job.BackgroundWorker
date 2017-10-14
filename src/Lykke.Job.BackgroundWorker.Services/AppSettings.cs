@@ -6,12 +6,12 @@ namespace Lykke.Job.BackgroundWorker.Services
     {
         public BackgroundWorkerSettings BackgroundWorkerJob { get; set; }
         public SlackNotificationsSettings SlackNotifications { get; set; }
+        public PersonalDataServiceSettings PersonalDataServiceSettings { get; set; }
 
         public class BackgroundWorkerSettings
         {
             public DbSettings Db { get; set; }
             public KycSpiderSettings KycSpiderSettings { get; set; }
-            public PersonalDataServiceSettings PersonalDataServiceSettings { get; set; }
         }
 
         public class DbSettings
