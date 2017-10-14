@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
+
 using Common;
+
 using Lykke.Job.BackgroundWorker.Contract.Contexts;
 using Lykke.Job.BackgroundWorker.Core.Domain.EventLogs;
 using Lykke.Job.BackgroundWorker.Core.Services.Geospatial;
@@ -23,18 +25,16 @@ namespace Lykke.Job.BackgroundWorker.Components.Workers
         public async Task DoWork()
         {
             if (_context == null)
-                throw new Exception("context was not set");
+            {
+                throw new InvalidOperationException("Context was not set.");
+            }
 
-            var authRecord =
-                await _authorizationLogsRepository.GetRecordAsync(_context.ClientId, _context.AuthLogRecordId);
+            var authRecord = await _authorizationLogsRepository.GetRecordAsync(_context.ClientId, _context.AuthLogRecordId);
 
             if (authRecord != null)
             {
                 var geo = await _srvIpGetLocation.GetDataAsync(authRecord.Ip);
-
-                await
-                    _authorizationLogsRepository.UpdateGeoDataAsync(_context.ClientId, _context.AuthLogRecordId,
-                        geo.CountryCode, geo.City);
+                await _authorizationLogsRepository.UpdateGeoDataAsync(_context.ClientId, _context.AuthLogRecordId, geo.CountryCode, geo.City);
             }
         }
 
@@ -42,7 +42,9 @@ namespace Lykke.Job.BackgroundWorker.Components.Workers
         {
             _context = contextJson.DeserializeJson<SetAuthLogRecordGeolocationContext>();
             if (_context == null)
+            {
                 throw new ArgumentException(nameof(contextJson));
+            }
         }
     }
 }

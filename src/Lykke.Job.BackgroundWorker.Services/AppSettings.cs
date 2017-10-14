@@ -1,4 +1,4 @@
-﻿using Lykke.Service.PersonalData.Settings;
+using Lykke.Service.Kyc.Client;
 
 namespace Lykke.Job.BackgroundWorker.Services
 {
@@ -6,12 +6,12 @@ namespace Lykke.Job.BackgroundWorker.Services
     {
         public BackgroundWorkerSettings BackgroundWorkerJob { get; set; }
         public SlackNotificationsSettings SlackNotifications { get; set; }
-        public PersonalDataServiceSettings PersonalDataServiceSettings { get; set; }
 
         public class BackgroundWorkerSettings
         {
             public DbSettings Db { get; set; }
-            public KycSpiderSettings KycSpiderSettings { get; set; }
+            public KycServiceSettings KycServiceSettings { get; set; }
+            public string ClientAccountServiceUrl { get; set; }
         }
 
         public class DbSettings
@@ -19,13 +19,6 @@ namespace Lykke.Job.BackgroundWorker.Services
             public string LogsConnString { get; set; }
             public string ClientPersonalInfoConnString { get; set; }
             public string HTradesConnString { get; set; }
-        }
-
-        public class KycSpiderSettings
-        {
-            public string User { get; set; }
-            public string Password { get; set; }
-            public string EndpointUrl { get; set; }
         }
 
         public class SlackNotificationsSettings
