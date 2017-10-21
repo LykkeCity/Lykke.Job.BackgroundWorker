@@ -55,7 +55,7 @@ namespace Lykke.Job.BackgroundWorker
             var appSettings = Configuration.LoadSettings<AppSettings>();
             var log = CreateLogWithSlack(services, appSettings);
 
-            builder.RegisterModule(new JobModule(appSettings, log));
+            builder.RegisterModule(new JobModule(appSettings.Nested(x => x.BackgroundWorkerJob), log));
 
             if (string.IsNullOrWhiteSpace(appSettings.CurrentValue.BackgroundWorkerJob.Db.ClientPersonalInfoConnString))
             {
