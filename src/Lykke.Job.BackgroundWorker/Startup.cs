@@ -6,7 +6,6 @@ using AzureStorage.Tables;
 using Common.Log;
 using Lykke.Common.ApiLibrary.Middleware;
 using Lykke.Common.ApiLibrary.Swagger;
-using Lykke.Job.BackgroundWorker.Core;
 using Lykke.Job.BackgroundWorker.Models;
 using Lykke.Job.BackgroundWorker.Modules;
 using Lykke.Job.BackgroundWorker.Services;
@@ -60,14 +59,12 @@ namespace Lykke.Job.BackgroundWorker
             });
 
             var builder = new ContainerBuilder();
-            var appSettings = Environment.IsDevelopment()
-                ? Configuration.Get<AppSettings>()
-                : HttpSettingsLoader.Load<AppSettings>(Configuration.GetValue<string>("SettingsUrl"));
+            var appSettings = Configuration.LoadSettings<AppSettings>();
             var log = CreateLogWithSlack(services, appSettings);
 
-            builder.RegisterModule(new JobModule(appSettings, log));
+            builder.RegisterModule(new JobModule(appSettings.Nested(x => x.BackgroundWorkerJob), log));
 
-            if (string.IsNullOrWhiteSpace(appSettings.BackgroundWorkerJob.Db.ClientPersonalInfoConnString))
+            if (string.IsNullOrWhiteSpace(appSettings.CurrentValue.BackgroundWorkerJob.Db.ClientPersonalInfoConnString))
             {
                 builder.AddTriggers();
             }
@@ -75,7 +72,7 @@ namespace Lykke.Job.BackgroundWorker
             {
                 builder.AddTriggers(pool =>
                 {
-                    pool.AddDefaultConnection(appSettings.BackgroundWorkerJob.Db.ClientPersonalInfoConnString);
+                    pool.AddDefaultConnection(appSettings.CurrentValue.BackgroundWorkerJob.Db.ClientPersonalInfoConnString);
                 });
             }
 
@@ -122,40 +119,48 @@ namespace Lykke.Job.BackgroundWorker
             ApplicationContainer.Dispose();
         }
 
-        private static ILog CreateLogWithSlack(IServiceCollection services, AppSettings settings)
+        private static ILog CreateLogWithSlack(IServiceCollection services, IReloadingManager<AppSettings> settings)
         {
-            LykkeLogToAzureStorage logToAzureStorage = null;
+            var consoleLogger = new LogToConsole();
+            var aggregateLogger = new AggregateLogger();
 
-            var logToConsole = new LogToConsole();
-            var logAggregate = new LogAggregate();
-
-            logAggregate.AddLogger(logToConsole);
-
-            var dbLogConnectionString = settings.BackgroundWorkerJob.Db.LogsConnString;
-
-            // Creating azure storage logger, which logs own messages to concole log
-            if (!string.IsNullOrEmpty(dbLogConnectionString) && !(dbLogConnectionString.StartsWith("${") && dbLogConnectionString.EndsWith("}")))
-            {
-                logToAzureStorage = new LykkeLogToAzureStorage("Lykke.Job.BackgroundWorker", new AzureTableStorage<LogEntity>(
-                    dbLogConnectionString, "BackgroundWorkerLog", logToConsole));
-
-                logAggregate.AddLogger(logToAzureStorage);
-            }
-
-            // Creating aggregate log, which logs to console and to azure storage, if last one specified
-            var log = logAggregate.CreateLogger();
+            aggregateLogger.AddLog(consoleLogger);
 
             // Creating slack notification service, which logs own azure queue processing messages to aggregate log
             var slackService = services.UseSlackNotificationsSenderViaAzureQueue(new AzureQueueIntegration.AzureQueueSettings
             {
-                ConnectionString = settings.SlackNotifications.AzureQueue.ConnectionString,
-                QueueName = settings.SlackNotifications.AzureQueue.QueueName
-            }, log);
+                ConnectionString = settings.CurrentValue.SlackNotifications.AzureQueue.ConnectionString,
+                QueueName = settings.CurrentValue.SlackNotifications.AzureQueue.QueueName
+            }, aggregateLogger);
 
-            // Finally, setting slack notification for azure storage log, which will forward necessary message to slack service
-            logToAzureStorage?.SetSlackNotification(slackService);
+            var dbLogConnectionStringManager = settings.Nested(x => x.BackgroundWorkerJob.Db.LogsConnString);
+            var dbLogConnectionString = dbLogConnectionStringManager.CurrentValue;
 
-            return log;
+            // Creating azure storage logger, which logs own messages to concole log
+            if (!string.IsNullOrEmpty(dbLogConnectionString) && !(dbLogConnectionString.StartsWith("${") && dbLogConnectionString.EndsWith("}")))
+            {
+                const string appName = "Lykke.Job.BackgroundWorker";
+                const string table = "BackgroundWorkerLog";
+
+                var persistenceManager = new LykkeLogToAzureStoragePersistenceManager(
+                    appName,
+                    AzureTableStorage<LogEntity>.Create(dbLogConnectionStringManager, table, consoleLogger),
+                    consoleLogger);
+
+                var slackNotificationsManager = new LykkeLogToAzureSlackNotificationsManager(appName, slackService, consoleLogger);
+
+                var azureStorageLogger = new LykkeLogToAzureStorage(
+                    appName,
+                    persistenceManager,
+                    slackNotificationsManager,
+                    consoleLogger);
+
+                azureStorageLogger.Start();
+
+                aggregateLogger.AddLog(azureStorageLogger);
+            }
+
+            return aggregateLogger;
         }
     }
 }
