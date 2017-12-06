@@ -1,33 +1,30 @@
-﻿using System;
-
-using Autofac;
-
+﻿using Autofac;
 using AzureStorage.Tables;
-
 using Common.Log;
-
 using Lykke.Job.BackgroundWorker.AzureRepositories.EventLogs;
 using Lykke.Job.BackgroundWorker.Components;
 using Lykke.Job.BackgroundWorker.Components.Workers;
 using Lykke.Job.BackgroundWorker.Core.Domain.EventLogs;
 using Lykke.Job.BackgroundWorker.Core.Services;
 using Lykke.Job.BackgroundWorker.Core.Services.Geospatial;
+using Lykke.Job.BackgroundWorker.Core.Settings.JobSettings;
 using Lykke.Job.BackgroundWorker.Services;
 using Lykke.Job.BackgroundWorker.Services.Geospatial;
 using Lykke.Service.ClientAccount.Client;
-using Lykke.SettingsReader;
 using Lykke.Service.Kyc.Abstractions.Services;
 using Lykke.Service.Kyc.Client;
+using Lykke.SettingsReader;
+using System;
 
 namespace Lykke.Job.BackgroundWorker.Modules
 {
     public class JobModule : Module
     {
-        private readonly IReloadingManager<AppSettings.BackgroundWorkerSettings> _settings;
+        private readonly IReloadingManager<BackgroundWorkerSettings> _settings;
         private readonly ILog _log;
-        private readonly IReloadingManager<AppSettings.DbSettings> _dbSettings;
+        private readonly IReloadingManager<DbSettings> _dbSettings;
 
-        public JobModule(IReloadingManager<AppSettings.BackgroundWorkerSettings> settings, ILog log)
+        public JobModule(IReloadingManager<BackgroundWorkerSettings> settings, ILog log)
         {
             _settings = settings;
             _dbSettings = settings.Nested(x => x.Db);
@@ -66,13 +63,13 @@ namespace Lykke.Job.BackgroundWorker.Modules
         {
             builder.RegisterType<SrvIpGeolocation>().As<ISrvIpGetLocation>().SingleInstance();
 
-            builder.RegisterInstance<KycServiceSettings>(_settings.CurrentValue.KycServiceSettings).SingleInstance();
+            builder.RegisterInstance(_settings.CurrentValue.KycServiceSettings).SingleInstance();
             builder.RegisterType<KycStatusServiceClient>().As<IKycStatusService>().SingleInstance();
             builder.RegisterType<KycCheckPersonServiceClient>().As<IKycCheckPersonService>().SingleInstance();
             builder.RegisterType<KycDocumentsServiceClient>().As<IKycDocumentsService>().SingleInstance();
             builder.RegisterType<KycProfileServiceClient>().As<IKycProfileService>().SingleInstance();
 
-            builder.RegisterInstance<IClientAccountClient>(new ClientAccountClient(_settings.CurrentValue.ClientAccountServiceUrl, _log)).SingleInstance();
+            builder.RegisterInstance<IClientAccountClient>(new ClientAccountClient(_settings.CurrentValue.ClientAccountServiceUrl)).SingleInstance();
 
         }
 

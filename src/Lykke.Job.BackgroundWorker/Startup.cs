@@ -16,21 +16,26 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System.Threading.Tasks;
+using Lykke.Job.BackgroundWorker.Core.Services;
+using Lykke.JobTriggers.Triggers;
+using Lykke.Job.BackgroundWorker.Core.Settings;
 
 namespace Lykke.Job.BackgroundWorker
 {
     public class Startup
     {
         public IHostingEnvironment Environment { get; }
-        public IContainer ApplicationContainer { get; set; }
+        public IContainer ApplicationContainer { get; private set; }
         public IConfigurationRoot Configuration { get; }
+        public ILog Log { get; private set; }
+        private TriggerHost _triggerHost;
+        private Task _triggerHostTask;
 
         public Startup(IHostingEnvironment env)
         {
             var builder = new ConfigurationBuilder()
                 .SetBasePath(env.ContentRootPath)
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
                 .AddEnvironmentVariables();
 
             Configuration = builder.Build();
@@ -39,60 +44,138 @@ namespace Lykke.Job.BackgroundWorker
 
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc()
-                .AddJsonOptions(options =>
+            try
+            {
+                services.AddMvc()
+                    .AddJsonOptions(options =>
+                    {
+                        options.SerializerSettings.ContractResolver =
+                            new Newtonsoft.Json.Serialization.DefaultContractResolver();
+                    });
+
+                services.AddSwaggerGen(options =>
                 {
-                    options.SerializerSettings.ContractResolver =
-                        new Newtonsoft.Json.Serialization.DefaultContractResolver();
+                    options.DefaultLykkeConfiguration("v1", "BackgroundWorker API");
                 });
 
-            services.AddSwaggerGen(options =>
-            {
-                options.DefaultLykkeConfiguration("v1", "BackgroundWorker API");
-            });
+                var builder = new ContainerBuilder();
+                var appSettings = Configuration.LoadSettings<AppSettings>();
 
-            var builder = new ContainerBuilder();
-            var appSettings = Configuration.LoadSettings<AppSettings>();
-            var log = CreateLogWithSlack(services, appSettings);
+                Log = CreateLogWithSlack(services, appSettings);
 
-            builder.RegisterModule(new JobModule(appSettings.Nested(x => x.BackgroundWorkerJob), log));
+                builder.RegisterModule(new JobModule(appSettings.Nested(x => x.BackgroundWorkerJob), Log));
 
-            if (string.IsNullOrWhiteSpace(appSettings.CurrentValue.BackgroundWorkerJob.Db.ClientPersonalInfoConnString))
-            {
-                builder.AddTriggers();
+                builder.Populate(services);
+
+                ApplicationContainer = builder.Build();
+
+                return new AutofacServiceProvider(ApplicationContainer);
             }
-            else
+            catch (Exception ex)
             {
-                builder.AddTriggers(pool =>
-                {
-                    pool.AddDefaultConnection(appSettings.CurrentValue.BackgroundWorkerJob.Db.ClientPersonalInfoConnString);
-                });
+                Log?.WriteFatalErrorAsync(nameof(Startup), nameof(ConfigureServices), "", ex).Wait();
+                throw;
             }
-
-            builder.Populate(services);
-
-            ApplicationContainer = builder.Build();
-
-            return new AutofacServiceProvider(ApplicationContainer);
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime appLifetime)
         {
-            if (env.IsDevelopment())
+            try
             {
-                app.UseDeveloperExceptionPage();
+                if (env.IsDevelopment())
+                {
+                    app.UseDeveloperExceptionPage();
+                }
+
+                app.UseLykkeMiddleware("BackgroundWorker", ex => new ErrorResponse { ErrorMessage = "Technical problem" });
+
+                app.UseMvc();
+                app.UseSwagger();
+                app.UseSwaggerUI(x =>
+                {
+                    x.RoutePrefix = "swagger/ui";
+                    x.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
+                });
+                app.UseStaticFiles();
+
+                appLifetime.ApplicationStarted.Register(() => StartApplication().Wait());
+                appLifetime.ApplicationStopping.Register(() => StopApplication().Wait());
+                appLifetime.ApplicationStopped.Register(() => CleanUp().Wait());
             }
-
-            app.UseLykkeMiddleware("BackgroundWorker", ex => new ErrorResponse { ErrorMessage = "Technical problem" });
-
-            app.UseMvc();
-            app.UseSwagger();
-            app.UseSwaggerUi();
-
-            appLifetime.ApplicationStopped.Register(() =>
+            catch (Exception ex)
             {
+                Log?.WriteFatalErrorAsync(nameof(Startup), nameof(Configure), "", ex).Wait();
+                throw;
+            }
+        }
+
+        private async Task StartApplication()
+        {
+            try
+            {
+                // NOTE: Job not yet recieve and process IsAlive requests here
+
+                await ApplicationContainer.Resolve<IStartupManager>().StartAsync();
+
+                _triggerHost = new TriggerHost(new AutofacServiceProvider(ApplicationContainer));
+                _triggerHostTask = _triggerHost.Start();
+
+                await Log.WriteMonitorAsync("", Program.EnvInfo, "Started");
+            }
+            catch (Exception ex)
+            {
+                await Log.WriteFatalErrorAsync(nameof(Startup), nameof(StartApplication), "", ex);
+                throw;
+            }
+        }
+
+        private async Task StopApplication()
+        {
+            try
+            {
+                // NOTE: Job still can recieve and process IsAlive requests here, so take care about it if you add logic here.
+
+                await ApplicationContainer.Resolve<IShutdownManager>().StopAsync();
+
+                _triggerHost?.Cancel();
+
+                if(_triggerHostTask != null)
+                {
+                    await _triggerHostTask;
+                }
+            }
+            catch (Exception ex)
+            {
+                if (Log != null)
+                {
+                    await Log.WriteFatalErrorAsync(nameof(Startup), nameof(StopApplication), "", ex);
+                }
+                throw;
+            }
+        }
+
+        private async Task CleanUp()
+        {
+            try
+            {
+                // NOTE: Job can't recieve and process IsAlive requests here, so you can destroy all resources
+
+                if (Log != null)
+                {
+                    await Log.WriteMonitorAsync("", Program.EnvInfo, "Terminating");
+                }
+
                 ApplicationContainer.Dispose();
-            });
+            }
+            catch (Exception ex)
+            {
+                if (Log != null)
+                {
+                    await Log.WriteFatalErrorAsync(nameof(Startup), nameof(CleanUp), "", ex);
+                    (Log as IDisposable)?.Dispose();
+                }
+                throw;
+            }
         }
 
         private static ILog CreateLogWithSlack(IServiceCollection services, IReloadingManager<AppSettings> settings)
@@ -115,18 +198,15 @@ namespace Lykke.Job.BackgroundWorker
             // Creating azure storage logger, which logs own messages to concole log
             if (!string.IsNullOrEmpty(dbLogConnectionString) && !(dbLogConnectionString.StartsWith("${") && dbLogConnectionString.EndsWith("}")))
             {
-                const string appName = "Lykke.Job.BackgroundWorker";
                 const string table = "BackgroundWorkerLog";
 
                 var persistenceManager = new LykkeLogToAzureStoragePersistenceManager(
-                    appName,
                     AzureTableStorage<LogEntity>.Create(dbLogConnectionStringManager, table, consoleLogger),
                     consoleLogger);
 
-                var slackNotificationsManager = new LykkeLogToAzureSlackNotificationsManager(appName, slackService, consoleLogger);
+                var slackNotificationsManager = new LykkeLogToAzureSlackNotificationsManager(slackService, consoleLogger);
 
                 var azureStorageLogger = new LykkeLogToAzureStorage(
-                    appName,
                     persistenceManager,
                     slackNotificationsManager,
                     consoleLogger);

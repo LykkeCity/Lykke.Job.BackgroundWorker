@@ -25,7 +25,7 @@ namespace Lykke.Job.BackgroundWorker.Components.Workers
                 throw new InvalidOperationException("Context was not set.");
             }
 
-            await _clientAccountsRepository.SetPIN(_context.ClientId, _context.Pin);
+            await _clientAccountsRepository.SetPinAsync(_context.ClientId, _context.Pin);
         }
 
         public void SetContext(string contextJson)
