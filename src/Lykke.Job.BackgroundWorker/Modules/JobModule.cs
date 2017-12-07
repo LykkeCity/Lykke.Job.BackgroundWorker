@@ -7,6 +7,7 @@ using Lykke.Job.BackgroundWorker.Components.Workers;
 using Lykke.Job.BackgroundWorker.Core.Domain.EventLogs;
 using Lykke.Job.BackgroundWorker.Core.Services;
 using Lykke.Job.BackgroundWorker.Core.Services.Geospatial;
+using Lykke.Job.BackgroundWorker.Core.Settings;
 using Lykke.Job.BackgroundWorker.Core.Settings.JobSettings;
 using Lykke.Job.BackgroundWorker.Services;
 using Lykke.Job.BackgroundWorker.Services.Geospatial;
@@ -23,11 +24,13 @@ namespace Lykke.Job.BackgroundWorker.Modules
         private readonly IReloadingManager<BackgroundWorkerSettings> _settings;
         private readonly ILog _log;
         private readonly IReloadingManager<DbSettings> _dbSettings;
+        private readonly IReloadingManager<KycServiceSettings> _kycSettings;
 
-        public JobModule(IReloadingManager<BackgroundWorkerSettings> settings, ILog log)
+        public JobModule(IReloadingManager<AppSettings> settings, ILog log)
         {
-            _settings = settings;
-            _dbSettings = settings.Nested(x => x.Db);
+            _settings = settings.Nested(x => x.BackgroundWorkerJob);
+            _kycSettings = settings.Nested(x => x.KycServiceSettings);
+            _dbSettings = _settings.Nested(x => x.Db);
             _log = log;
         }
 
@@ -63,7 +66,7 @@ namespace Lykke.Job.BackgroundWorker.Modules
         {
             builder.RegisterType<SrvIpGeolocation>().As<ISrvIpGetLocation>().SingleInstance();
 
-            builder.RegisterInstance(_settings.CurrentValue.KycServiceSettings).SingleInstance();
+            builder.RegisterInstance<KycServiceSettings>(_kycSettings.CurrentValue).SingleInstance();
             builder.RegisterType<KycStatusServiceClient>().As<IKycStatusService>().SingleInstance();
             builder.RegisterType<KycCheckPersonServiceClient>().As<IKycCheckPersonService>().SingleInstance();
             builder.RegisterType<KycDocumentsServiceClient>().As<IKycDocumentsService>().SingleInstance();

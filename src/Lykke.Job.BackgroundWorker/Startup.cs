@@ -63,7 +63,7 @@ namespace Lykke.Job.BackgroundWorker
 
                 Log = CreateLogWithSlack(services, appSettings);
 
-                builder.RegisterModule(new JobModule(appSettings.Nested(x => x.BackgroundWorkerJob), Log));
+                builder.RegisterModule(new JobModule(appSettings, Log));
 
                 builder.Populate(services);
 
