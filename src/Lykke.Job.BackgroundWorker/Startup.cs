@@ -1,14 +1,14 @@
-﻿using System;
-using Autofac;
+﻿using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using AzureStorage.Tables;
 using Common.Log;
 using Lykke.Common.ApiLibrary.Middleware;
 using Lykke.Common.ApiLibrary.Swagger;
+using Lykke.Job.BackgroundWorker.Core.Services;
+using Lykke.Job.BackgroundWorker.Core.Settings;
 using Lykke.Job.BackgroundWorker.Models;
 using Lykke.Job.BackgroundWorker.Modules;
-using Lykke.Job.BackgroundWorker.Services;
-using Lykke.JobTriggers.Extenstions;
+using Lykke.JobTriggers.Triggers;
 using Lykke.Logs;
 using Lykke.SettingsReader;
 using Lykke.SlackNotification.AzureQueue;
@@ -16,10 +16,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Threading.Tasks;
-using Lykke.Job.BackgroundWorker.Core.Services;
-using Lykke.JobTriggers.Triggers;
-using Lykke.Job.BackgroundWorker.Core.Settings;
 
 namespace Lykke.Job.BackgroundWorker
 {
@@ -139,7 +137,7 @@ namespace Lykke.Job.BackgroundWorker
 
                 _triggerHost?.Cancel();
 
-                if(_triggerHostTask != null)
+                if (_triggerHostTask != null)
                 {
                     await _triggerHostTask;
                 }
