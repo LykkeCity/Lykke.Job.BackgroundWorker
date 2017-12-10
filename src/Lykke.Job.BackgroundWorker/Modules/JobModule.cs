@@ -1,4 +1,5 @@
 ﻿using Autofac;
+using Autofac.Extensions.DependencyInjection;
 using AzureStorage.Tables;
 using Common.Log;
 using Lykke.Job.BackgroundWorker.AzureRepositories.EventLogs;
@@ -11,6 +12,7 @@ using Lykke.Job.BackgroundWorker.Core.Settings;
 using Lykke.Job.BackgroundWorker.Core.Settings.JobSettings;
 using Lykke.Job.BackgroundWorker.Services;
 using Lykke.Job.BackgroundWorker.Services.Geospatial;
+using Lykke.Job.LykkeJob.Services;
 using Lykke.Service.ClientAccount.Client;
 using Lykke.Service.Kyc.Abstractions.Services;
 using Lykke.Service.Kyc.Client;
@@ -36,6 +38,12 @@ namespace Lykke.Job.BackgroundWorker.Modules
 
         protected override void Load(ContainerBuilder builder)
         {
+            // NOTE: Do not register entire settings in container, pass necessary settings to services which requires them
+            // ex:
+            // builder.RegisterType<QuotesPublisher>()
+            //  .As<IQuotesPublisher>()
+            //  .WithParameter(TypedParameter.From(_settings.Rabbit.ConnectionString))
+
             builder.RegisterInstance(_settings.CurrentValue)
                 .SingleInstance();
 
@@ -47,6 +55,12 @@ namespace Lykke.Job.BackgroundWorker.Modules
                 .As<IHealthService>()
                 .SingleInstance()
                 .WithParameter(TypedParameter.From(TimeSpan.FromSeconds(30)));
+
+            builder.RegisterType<StartupManager>()
+                .As<IStartupManager>();
+
+            builder.RegisterType<ShutdownManager>()
+                .As<IShutdownManager>();
 
             // NOTE: You can implement your own poison queue notifier. See https://github.com/LykkeCity/JobTriggers/blob/master/readme.md
             // builder.Register<PoisionQueueNotifierImplementation>().As<IPoisionQueueNotifier>();
@@ -72,8 +86,7 @@ namespace Lykke.Job.BackgroundWorker.Modules
             builder.RegisterType<KycDocumentsServiceClient>().As<IKycDocumentsService>().SingleInstance();
             builder.RegisterType<KycProfileServiceClient>().As<IKycProfileService>().SingleInstance();
 
-            builder.RegisterInstance<IClientAccountClient>(new ClientAccountClient(_settings.CurrentValue.ClientAccountServiceUrl)).SingleInstance();
-
+            builder.RegisterLykkeServiceClient(_settings.CurrentValue.ClientAccountServiceUrl);
         }
 
         private void BindRepositories(ContainerBuilder builder)
