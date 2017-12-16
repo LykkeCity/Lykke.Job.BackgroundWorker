@@ -1,7 +1,11 @@
-﻿using Autofac;
-using Autofac.Extensions.DependencyInjection;
+﻿using System;
+
+using Autofac;
+
 using AzureStorage.Tables;
+
 using Common.Log;
+
 using Lykke.Job.BackgroundWorker.AzureRepositories.EventLogs;
 using Lykke.Job.BackgroundWorker.Components;
 using Lykke.Job.BackgroundWorker.Components.Workers;
@@ -17,22 +21,23 @@ using Lykke.Service.ClientAccount.Client;
 using Lykke.Service.Kyc.Abstractions.Services;
 using Lykke.Service.Kyc.Client;
 using Lykke.SettingsReader;
-using System;
 
 namespace Lykke.Job.BackgroundWorker.Modules
 {
     public class JobModule : Module
     {
-        private readonly IReloadingManager<BackgroundWorkerSettings> _settings;
+        private readonly IReloadingManager<ClientAccountServiceClientSettings> _caSettings;
+        private readonly IReloadingManager<BackgroundWorkerSettings> _jobSettings;
         private readonly ILog _log;
         private readonly IReloadingManager<DbSettings> _dbSettings;
         private readonly IReloadingManager<KycServiceSettings> _kycSettings;
 
         public JobModule(IReloadingManager<AppSettings> settings, ILog log)
         {
-            _settings = settings.Nested(x => x.BackgroundWorkerJob);
+            _caSettings = settings.Nested(x => x.ClientAccountServiceClient);
+            _jobSettings = settings.Nested(x => x.BackgroundWorkerJob);
             _kycSettings = settings.Nested(x => x.KycServiceSettings);
-            _dbSettings = _settings.Nested(x => x.Db);
+            _dbSettings = _jobSettings.Nested(x => x.Db);
             _log = log;
         }
 
@@ -44,7 +49,7 @@ namespace Lykke.Job.BackgroundWorker.Modules
             //  .As<IQuotesPublisher>()
             //  .WithParameter(TypedParameter.From(_settings.Rabbit.ConnectionString))
 
-            builder.RegisterInstance(_settings.CurrentValue)
+            builder.RegisterInstance(_jobSettings.CurrentValue)
                 .SingleInstance();
 
             builder.RegisterInstance(_log)
@@ -86,7 +91,7 @@ namespace Lykke.Job.BackgroundWorker.Modules
             builder.RegisterType<KycDocumentsServiceClient>().As<IKycDocumentsService>().SingleInstance();
             builder.RegisterType<KycProfileServiceClient>().As<IKycProfileService>().SingleInstance();
 
-            builder.RegisterLykkeServiceClient(_settings.CurrentValue.ClientAccountServiceUrl);
+            builder.RegisterLykkeServiceClient(_caSettings.CurrentValue.ServiceUrl);
         }
 
         private void BindRepositories(ContainerBuilder builder)
