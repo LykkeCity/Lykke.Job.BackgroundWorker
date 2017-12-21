@@ -1,43 +1,27 @@
 ﻿using System;
 using System.IO;
-using System.Runtime.Loader;
-using System.Threading;
 using System.Threading.Tasks;
-using Lykke.JobTriggers.Triggers;
+
 using Microsoft.AspNetCore.Hosting;
 
 namespace Lykke.Job.BackgroundWorker
 {
-    class Program
+    internal sealed class Program
     {
-        static void Main(string[] args)
+        public static string EnvInfo => Environment.GetEnvironmentVariable("ENV_INFO");
+
+        public static async Task Main(string[] args)
         {
-            Console.WriteLine(
-                $"BackgroundWorker version: {Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion}");
+            Console.WriteLine($"BackgroundWorker version {Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion}");
 #if DEBUG
-            Console.WriteLine("Starting... Is DEBUG");
+            Console.WriteLine("Is DEBUG");
 #else
-            Console.WriteLine("Starting... Is RELEASE");
-
+            Console.WriteLine("Is RELEASE");
 #endif
-
-            var webHostCancellationTokenSource = new CancellationTokenSource();
-            TriggerHost triggerHost = null;
-            Task webHostTask = null;
-            Task triggerHostTask = null;
-            var end = new ManualResetEvent(false);
+            Console.WriteLine($"ENV_INFO: {EnvInfo}");
 
             try
             {
-                AssemblyLoadContext.Default.Unloading += ctx =>
-                {
-                    Console.WriteLine("SIGTERM recieved");
-
-                    webHostCancellationTokenSource.Cancel();
-
-                    end.WaitOne();
-                };
-
                 var webHost = new WebHostBuilder()
                     .UseKestrel()
                     .UseUrls("http://*:5000")
@@ -46,27 +30,28 @@ namespace Lykke.Job.BackgroundWorker
                     .UseApplicationInsights()
                     .Build();
 
-                triggerHost = new TriggerHost(webHost.Services);
-
-                webHostTask = webHost.RunAsync(webHostCancellationTokenSource.Token);
-                triggerHostTask = triggerHost.Start();
-
-                // WhenAny to handle any task termination with exception, 
-                // or gracefully termination of webHostTask
-                Task.WhenAny(webHostTask, triggerHostTask).Wait();
+                await webHost.RunAsync();
             }
-            finally
+            catch (Exception ex)
             {
-                Console.WriteLine("Terminating...");
+                Console.WriteLine("Fatal error:");
+                Console.WriteLine(ex);
 
-                webHostCancellationTokenSource.Cancel();
-                triggerHost?.Cancel();
+                // Lets devops to see startup error in console between restarts in the Kubernetes
+                var delay = TimeSpan.FromMinutes(1);
 
-                webHostTask?.Wait();
-                triggerHostTask?.Wait();
+                Console.WriteLine();
+                Console.WriteLine($"Process will be terminated in {delay}. Press any key to terminate immediately.");
 
-                end.Set();
+                await Task.WhenAny(
+                        Task.Delay(delay),
+                        Task.Run(() =>
+                        {
+                            Console.ReadKey(true);
+                            }));
             }
+
+            Console.WriteLine("Terminated");
         }
     }
 }

@@ -1,9 +1,15 @@
 
+using Lykke.Job.BackgroundWorker.Core.Domain.Health;
+using System.Collections.Generic;
+
 namespace Lykke.Job.BackgroundWorker.Core.Services
 {
+    // NOTE: See https://lykkex.atlassian.net/wiki/spaces/LKEWALLET/pages/35755585/Add+your+app+to+Monitoring
     public interface IHealthService
     {
         string GetHealthViolationMessage();
-        string GetHealthWarningMessage();
+        IEnumerable<HealthIssue> GetHealthIssues();
+
+        // TODO: Place health tracing methods declarations here
     }
 }

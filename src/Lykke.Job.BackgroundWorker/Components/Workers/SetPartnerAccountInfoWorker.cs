@@ -38,7 +38,7 @@ namespace Lykke.Job.BackgroundWorker.Components.Workers
                 throw new InvalidOperationException("Context was not set.");
             }
 
-            var accounts = await _clientAccountService.GetClientsByEmail(_context.Email);
+            var accounts = await _clientAccountService.GetClientsByEmailAsync(_context.Email);
             if (accounts == null || accounts.Count() <= 1) {
                 return;
             }
