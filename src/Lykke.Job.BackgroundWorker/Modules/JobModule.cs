@@ -58,8 +58,7 @@ namespace Lykke.Job.BackgroundWorker.Modules
 
             builder.RegisterType<HealthService>()
                 .As<IHealthService>()
-                .SingleInstance()
-                .WithParameter(TypedParameter.From(TimeSpan.FromSeconds(30)));
+                .SingleInstance();
 
             builder.RegisterType<StartupManager>()
                 .As<IStartupManager>();
