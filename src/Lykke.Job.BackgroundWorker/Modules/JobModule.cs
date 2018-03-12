@@ -30,7 +30,7 @@ namespace Lykke.Job.BackgroundWorker.Modules
         private readonly IReloadingManager<BackgroundWorkerSettings> _jobSettings;
         private readonly ILog _log;
         private readonly IReloadingManager<DbSettings> _dbSettings;
-        private readonly IReloadingManager<KycServiceSettings> _kycSettings;
+        private readonly IReloadingManager<KycServiceClientSettings> _kycSettings;
 
         public JobModule(IReloadingManager<AppSettings> settings, ILog log)
         {
@@ -84,7 +84,7 @@ namespace Lykke.Job.BackgroundWorker.Modules
         {
             builder.RegisterType<SrvIpGeolocation>().As<ISrvIpGetLocation>().SingleInstance();
 
-            builder.RegisterInstance<KycServiceSettings>(_kycSettings.CurrentValue).SingleInstance();
+            builder.RegisterInstance<KycServiceClientSettings>(_kycSettings.CurrentValue).SingleInstance();
             builder.RegisterType<KycStatusServiceClient>().As<IKycStatusService>().SingleInstance();
             builder.RegisterType<KycCheckPersonServiceClient>().As<IKycCheckPersonService>().SingleInstance();
             builder.RegisterType<KycDocumentsServiceClient>().As<IKycDocumentsService>().SingleInstance();
