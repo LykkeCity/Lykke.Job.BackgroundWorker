@@ -14,6 +14,7 @@ using Lykke.Job.BackgroundWorker.Core.Services;
 using Lykke.Job.BackgroundWorker.Core.Settings;
 using Lykke.Job.BackgroundWorker.Models;
 using Lykke.Job.BackgroundWorker.Modules;
+using Lykke.JobTriggers.Extenstions;
 using Lykke.JobTriggers.Triggers;
 using Lykke.Logs;
 using Lykke.SettingsReader;
@@ -67,6 +68,11 @@ namespace Lykke.Job.BackgroundWorker
                 Log = CreateLogWithSlack(services, appSettings);
 
                 builder.RegisterModule(new JobModule(appSettings, Log));
+
+                builder.AddTriggers(pool =>
+                {
+                    pool.AddDefaultConnection(appSettings.Nested(_ => _.BackgroundWorkerJob.Db.ClientPersonalInfoConnString));
+                });
 
                 builder.Populate(services);
 
