@@ -73,9 +73,7 @@ namespace Lykke.Job.BackgroundWorker.Modules
 
             builder.RegisterType<SetPinWorker>();
             builder.RegisterType<SetAuthLogGeolocationWorker>();
-            builder.RegisterType<SetPartnerAccountInfoWorker>();
-            builder.RegisterType<CheckPersonWorker>();
-
+            
             BindRepositories(builder);
             BindServices(builder);
         }
