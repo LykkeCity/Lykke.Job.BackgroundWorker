@@ -10,7 +10,6 @@
     <PackageReference Include="Lykke.Common" Version="6.8.5" />
     <PackageReference Include="System.ServiceModel.Http" Version="4.4.0" />
     <PackageReference Include="System.Xml.XmlSerializer" Version="4.3.0" />
-    <PackageReference Include="Lykke.Service.Kyc.Client" Version="1.0.40" />
   </ItemGroup>
 
   <ItemGroup>
