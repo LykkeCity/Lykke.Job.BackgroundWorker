@@ -6,9 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Lykke.Common" Version="6.8.5" />
-    <PackageReference Include="Lykke.Service.ClientAccount.Client" Version="1.1.13" />
-    <PackageReference Include="Lykke.Service.Kyc.Client" Version="1.0.40" />
+    <PackageReference Include="Lykke.Common" Version="7.1.0" />
+    <PackageReference Include="Lykke.Service.ClientAccount.Client" Version="2.2.3" />
   </ItemGroup>
 
 </Project>

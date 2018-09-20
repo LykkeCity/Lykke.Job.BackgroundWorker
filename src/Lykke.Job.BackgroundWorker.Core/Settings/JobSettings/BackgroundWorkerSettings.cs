@@ -1,6 +1,4 @@
-﻿using Lykke.Service.Kyc.Client;
-
-namespace Lykke.Job.BackgroundWorker.Core.Settings.JobSettings
+﻿namespace Lykke.Job.BackgroundWorker.Core.Settings.JobSettings
 {
     public class BackgroundWorkerSettings
     {

@@ -1,6 +1,4 @@
-﻿using System;
-
-using Autofac;
+﻿using Autofac;
 
 using AzureStorage.Tables;
 
@@ -18,8 +16,6 @@ using Lykke.Job.BackgroundWorker.Services;
 using Lykke.Job.BackgroundWorker.Services.Geospatial;
 using Lykke.Job.LykkeJob.Services;
 using Lykke.Service.ClientAccount.Client;
-using Lykke.Service.Kyc.Abstractions.Services;
-using Lykke.Service.Kyc.Client;
 using Lykke.SettingsReader;
 
 namespace Lykke.Job.BackgroundWorker.Modules
@@ -30,13 +26,11 @@ namespace Lykke.Job.BackgroundWorker.Modules
         private readonly IReloadingManager<BackgroundWorkerSettings> _jobSettings;
         private readonly ILog _log;
         private readonly IReloadingManager<DbSettings> _dbSettings;
-        private readonly IReloadingManager<KycServiceSettings> _kycSettings;
 
         public JobModule(IReloadingManager<AppSettings> settings, ILog log)
         {
             _caSettings = settings.Nested(x => x.ClientAccountServiceClient);
             _jobSettings = settings.Nested(x => x.BackgroundWorkerJob);
-            _kycSettings = settings.Nested(x => x.KycServiceSettings);
             _dbSettings = _jobSettings.Nested(x => x.Db);
             _log = log;
         }
@@ -73,9 +67,7 @@ namespace Lykke.Job.BackgroundWorker.Modules
 
             builder.RegisterType<SetPinWorker>();
             builder.RegisterType<SetAuthLogGeolocationWorker>();
-            builder.RegisterType<SetPartnerAccountInfoWorker>();
-            builder.RegisterType<CheckPersonWorker>();
-
+            
             BindRepositories(builder);
             BindServices(builder);
         }
@@ -83,13 +75,7 @@ namespace Lykke.Job.BackgroundWorker.Modules
         private void BindServices(ContainerBuilder builder)
         {
             builder.RegisterType<SrvIpGeolocation>().As<ISrvIpGetLocation>().SingleInstance();
-
-            builder.RegisterInstance<KycServiceSettings>(_kycSettings.CurrentValue).SingleInstance();
-            builder.RegisterType<KycStatusServiceClient>().As<IKycStatusService>().SingleInstance();
-            builder.RegisterType<KycCheckPersonServiceClient>().As<IKycCheckPersonService>().SingleInstance();
-            builder.RegisterType<KycDocumentsServiceClient>().As<IKycDocumentsService>().SingleInstance();
-            builder.RegisterType<KycProfileServiceClient>().As<IKycProfileService>().SingleInstance();
-
+            
             builder.RegisterLykkeServiceClient(_caSettings.CurrentValue.ServiceUrl);
         }
 
